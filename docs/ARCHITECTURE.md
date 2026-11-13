@@ -2,6 +2,8 @@
 
 Objetivo: que mañana funcione como producto real. Cualquier persona, desde cualquier red (datos móviles incluidos), abre un enlace o escanea un QR, instala la app, entra a su comunidad, registra sus parcelas y datos, y recibe del servidor un plan calculado por el cerebro. Nada de demos que solo funcionan en la red local.
 
+**Piloto:** corredor agrícola Chivay–Yanque–Coporaque, valle del Colca, sierra de Arequipa (centro −15.640, −71.635; parcelas entre ~3 400 y 3 900 m).
+
 Supuesto: hay internet (no construimos el modo offline del punto 12.1 de la especificación; queda en la hoja de ruta).
 
 ---
@@ -121,7 +123,12 @@ Autenticación simple pero real: nombre + teléfono + PIN de 4 dígitos, sesión
 | MODIS MOD13Q1 NDVI 2000→hoy | ORNL DAAC MODIS Web Service (subset por punto, 250 m) | no | serie de 16 días por parcela con máscara de calidad |
 | SoilGrids 250 m | `rest.isric.org` (consulta por punto) | no | arcilla, arena, pH, carbono → Saxton & Rawls → θ_FC, θ_WP |
 | Elevación SRTM 30 m | OpenTopoData (`srtm30m`) | no | elevación; pendiente y orientación con 4 vecinos |
-| GPM IMERG | GES DISC | **Earthdata** | opcional; POWER ya trae PRECTOTCORR |
+| GPM IMERG | Planetary Computer `gpm-imerg-hhr` o GES DISC | Earthdata solo si es GES DISC | opcional; POWER ya trae PRECTOTCORR |
+| HLS NDVI 30 m (mejora) | Planetary Computer `hls2-l30` / `hls2-s30` | no (token SAS anónimo) | NDVI a escala de parcela; sube la confianza (píxel ≤ parcela) |
+| Máscara de cultivo | Planetary Computer `esa-worldcover` (ESA, 10 m) | no | elegir/validar parcelas demo; **producto ESA, no NASA** |
+| Respaldo de clima | Meteomatics (oferta del hackathon) | usuario/clave | solo verificación puntual si POWER falla; **fuente complementaria, no NASA** |
+
+**Planetary Computer** es una *vía de acceso*: aloja MODIS MOD13Q1 v061, HLS, IMERG y NASADEM (productos NASA) con STAC + COG, lo que evita armar AppEEARS/earthaccess. Para MODIS por punto, el ORNL DAAC Web Service sigue siendo lo más simple; se elige lo que responda más rápido en la prueba del bloque 1. La procedencia siempre registra producto + productor + vía, por ejemplo `"MODIS MOD13Q1 v061 (NASA) vía Microsoft Planetary Computer"`.
 
 Cada fuente se descarga **una vez por comunidad** y se cachea en `valley_datasets` (versionado). Antes del hackathon se descarga Colca y se guarda en `fixtures/`, por si el wifi del evento falla.
 
@@ -206,6 +213,14 @@ GET  /api/datasets/:id/coverage  (qué años cubre cada fuente)
 - Oracle Cloud Always Free o un VPS barato; `docker compose up`, Caddy con Let's Encrypt y tu dominio apuntando por registro A. No depende de que tu laptop esté encendida ni del wifi del evento.
 
 En las tres el código es el mismo: solo cambia `PUBLIC_URL`.
+
+### Decisión tomada (Global Offers del hackathon)
+
+1. **Google Cloud Compute Engine** (VM pequeño, por ejemplo e2-medium, Ubuntu, región `southamerica-west1` o `us-east1`) con los créditos de la oferta. Corre el mismo `infra/docker-compose.yml` más un `Caddyfile.prod`. Se descarta Cloud Run porque tenemos Postgres, un worker de larga duración con pg-boss y SSE; se descarta también Render/Railway porque se duermen. Antes del pitch: warm-up (`curl /api/health` y una corrida de ensayo).
+2. **Mientras el VM no exista**: laptop + ngrok (`obsession-savior-dry.ngrok-free.dev`) como entorno vivo y plan B.
+3. **GoDaddy, al final**: dominio corto → registro A al IP del VM → Caddy emite el certificado. No se usa el hosting de GoDaddy.
+
+Nota: la especificación de Global Offers menciona Socket.IO, Render/Railway, `data-pipeline/` y «Anexo A/B»; en esta arquitectura eso equivale a SSE, VM en Google Cloud, `packages/data` y esta sección. Mismo propósito, otros nombres.
 
 ---
 

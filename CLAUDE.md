@@ -2,7 +2,9 @@
 
 Qullqa es un gemelo digital comunitario para agricultores andinos (piloto: valle del Colca). Proyecto para NASA Space Apps (hackathon de 48 h, desde 2026-11-14).
 
-**Zona: sierra de Arequipa** (valle del Colca y pisos altoandinos, ~2 800–4 200 m). Solo cultivos andinos de sierra: papa, olluco, oca, haba, tarwi, arveja, quinua, cebada, avena forrajera, maíz amiláceo (p. ej. Cabanita). Nada de costa (arroz, ají, cebolla de valle bajo, etc.). Valores de cultivos: INIA/fuentes peruanas prevalecen sobre FAO cuando difieren. Ayuda a una comunidad a decidir **qué plantar, cuándo y coordinado con sus vecinos**, usando datos NASA + observaciones de campo tomadas con el celular.
+**Zona: sierra de Arequipa** (valle del Colca y pisos altoandinos, ~2 800–4 200 m). Solo cultivos andinos de sierra: papa, olluco, oca, haba, tarwi, arveja, quinua, cebada, avena forrajera, maíz amiláceo (p. ej. Cabanita). Nada de costa (arroz, ají, cebolla de valle bajo, etc.).
+
+**Piloto: corredor agrícola Chivay–Yanque–Coporaque** (andenes del valle del Colca, provincia de Caylloma). Centro de trabajo: −15.640, −71.635 (~3 520 m SRTM). Rango de parcelas: ~3 400–3 900 m. Confirmar la máscara de cultivo con ESA WorldCover (clase 40 = cropland) antes de fijar parcelas demo. Valores de cultivos: INIA/fuentes peruanas prevalecen sobre FAO cuando difieren. Ayuda a una comunidad a decidir **qué plantar, cuándo y coordinado con sus vecinos**, usando datos NASA + observaciones de campo tomadas con el celular.
 
 - Especificación del motor (fuente de verdad científica): `Qullqa — Motor de decisión especificación completa para Claude CodeFinal.pdf`. **Las correcciones de la sección 15 prevalecen sobre las secciones 1–14.**
 - Arquitectura del sistema: `docs/ARCHITECTURE.md`.
@@ -78,11 +80,26 @@ docker compose -f infra/docker-compose.yml up -d   # Postgres/PostGIS + Caddy
 ./infra/tunnel.sh            # expone Caddy por el dominio estático de ngrok
 ```
 
+## Global Offers de NASA Space Apps 2026 (usarlas solo donde aportan)
+
+Prioridad si falta tiempo: **1) Google Cloud** (hosting de la demo) y **2) Planetary Computer** (solo si ahorra tiempo real en datos). El resto son extras: nunca sacrificar el motor ni la demo en vivo por ellos.
+
+| Oferta | Uso en Qullqa | Regla |
+|---|---|---|
+| Google Cloud | **Compute Engine VM** (e2-medium o similar) con el mismo `docker compose` (Caddy + API + worker + PostGIS). Warm-up antes de presentar. | No Cloud Run: tenemos Postgres + worker de larga duración + SSE; un VM es más predecible. Usar los créditos de la oferta. |
+| Microsoft Planetary Computer | Vía de **acceso** (STAC) a productos que ya usamos: `modis-13Q1-061` (NDVI 250 m), `hls2-l30`/`hls2-s30` (NDVI 30 m, mejora), `gpm-imerg-hhr`, `nasadem`, `esa-worldcover`. | La procedencia distingue **producto** y **vía de acceso**: «MODIS MOD13Q1 v061 (NASA) vía Microsoft Planetary Computer». Si el producto no es NASA (Sentinel-2 = ESA, WorldCover = ESA), se dice así. No tiene SoilGrids ni SMAP. |
+| Meteomatics | Solo **respaldo/verificación** puntual (p. ej. contrastar una Tmin) si NASA POWER falla. | Nunca reemplaza a POWER en el pipeline principal. Etiqueta obligatoria: «fuente complementaria, no NASA». |
+| GoDaddy | Dominio corto para la entrega (video, documentación, QR). **Al final.** | No usar su hosting (no corre Node/Postgres). Desactivar renovación automática. |
+| GitHub Copilot / Teams / Miro | Herramientas del equipo (código, coordinación, cronograma). | No son parte del producto. **No mencionarlas en el pitch.** |
+
+Regla de etiquetado de fuentes (extiende la regla de oro): el campo `source` de cada valor nombra el **producto original y su productor**, y si aplica, la vía de acceso. Nunca presentar un dato no-NASA como NASA.
+
 ## Infraestructura local (puertos fijos)
 
 - Postgres + PostGIS (docker `qullqa-db-1`): `localhost:5434` (5432/5433 los usa otro proyecto).
 - API Fastify: `:3000` · Caddy: `:8080` (sirve `apps/web/dist` + proxy `/api/*`).
-- Público: `https://obsession-savior-dry.ngrok-free.dev` (ngrok gratis, dominio estático). Plan: migrar a Cloudflare Tunnel con dominio propio (`PUBLIC_TUNNEL=cloudflare`). Solo cambia `.env`, nunca el código.
+- Público (desarrollo / plan B): `https://obsession-savior-dry.ngrok-free.dev` (ngrok gratis, dominio estático).
+- Producción de la demo: VM de Google Cloud; luego dominio GoDaddy con registro A al VM y Caddy con HTTPS automático (sin túnel). Solo cambia `.env` y el Caddyfile de producción, nunca el código.
 - ngrok gratis muestra una página de aviso a navegadores en la primera visita; `apps/web/src/api.ts` envía `ngrok-skip-browser-warning` en cada fetch.
 - Secretos en `.env` (no se commitea); `EARTHDATA_TOKEN` para GPM IMERG/SMAP.
 - Tras cambiar la PWA: `pnpm build:web` (Caddy sirve el build; el service worker solo existe en build).
