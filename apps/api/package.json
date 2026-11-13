@@ -1,0 +1,19 @@
+{
+  "name": "@qullqa/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/server.ts",
+    "start": "tsx --env-file=../../.env src/server.ts",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@qullqa/shared": "workspace:*",
+    "fastify": "^5.12.8",
+    "postgres": "^4.1.1"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  }
+}
