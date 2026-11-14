@@ -113,9 +113,9 @@ Regla de etiquetado de fuentes (extiende la regla de oro): el campo `source` de 
 - Postgres + PostGIS (docker `qullqa-db-1`): `localhost:5434` (5432/5433 los usa otro proyecto).
 - API Fastify: `:3000` · Caddy: `:8080` (sirve `apps/web/dist` + proxy `/api/*`).
 - Público (desarrollo / plan B): `https://obsession-savior-dry.ngrok-free.dev` (ngrok gratis, dominio estático).
-- Producción de la demo: VM de Google Cloud; luego dominio GoDaddy con registro A al VM y Caddy con HTTPS automático (sin túnel). Solo cambia `.env` y el Caddyfile de producción, nunca el código.
+- Producción de la demo: VM (Azure `infra/azure.sh` o GCP `infra/gcp.sh`, mismo compose) + dominio **qullqa.us** (Porkbun) con registro A al VM y Caddy con HTTPS automático (sin túnel). Solo cambia `.env` y el Caddyfile de producción, nunca el código.
 - ngrok gratis muestra una página de aviso a navegadores en la primera visita; `apps/web/src/api.ts` envía `ngrok-skip-browser-warning` en cada fetch.
-- Secretos en `.env` (no se commitea); `EARTHDATA_TOKEN` para GPM IMERG/SMAP.
+- Secretos en `.env` (no se commitea): `EARTHDATA_TOKEN` (GPM IMERG/SMAP), `PC_SDK_SUBSCRIPTION_KEY` (Planetary Computer, opcional), `METEOMATICS_USERNAME/PASSWORD` (solo respaldo). El agricultor/usuario los pega en `.env`, nunca en el chat. `./infra/azure.sh secrets` copia solo esas claves a la VM.
 - Tras cambiar la PWA: `pnpm build:web` (Caddy sirve el build; el service worker solo existe en build).
 
 ## Convenciones
