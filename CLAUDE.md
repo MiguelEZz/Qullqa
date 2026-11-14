@@ -115,7 +115,7 @@ Regla de etiquetado de fuentes (extiende la regla de oro): el campo `source` de 
 - Público (desarrollo / plan B): `https://obsession-savior-dry.ngrok-free.dev` (ngrok gratis, dominio estático).
 - Producción de la demo: VM (Azure `infra/azure.sh` o GCP `infra/gcp.sh`, mismo compose) + dominio **qullqa.us** (Porkbun) con registro A al VM y Caddy con HTTPS automático (sin túnel). Solo cambia `.env` y el Caddyfile de producción, nunca el código.
 - ngrok gratis muestra una página de aviso a navegadores en la primera visita; `apps/web/src/api.ts` envía `ngrok-skip-browser-warning` en cada fetch.
-- Secretos en `.env` (no se commitea): `EARTHDATA_TOKEN` (GPM IMERG/SMAP), `PC_SDK_SUBSCRIPTION_KEY` (Planetary Computer, opcional), `METEOMATICS_USERNAME/PASSWORD` (solo respaldo). El agricultor/usuario los pega en `.env`, nunca en el chat. `./infra/azure.sh secrets` copia solo esas claves a la VM.
+- Secretos en `.env` (no se commitea): `EARTHDATA_TOKEN` (GPM IMERG/SMAP), `PC_SDK_SUBSCRIPTION_KEY` (Planetary Computer, opcional), `METEOMATICS_USERNAME/PASSWORD` (solo respaldo). Se pegan en `.env`, nunca en el chat. `./infra/azure.sh secrets` copia solo esas claves a la VM.
 - Tras cambiar la PWA: `pnpm build:web` (Caddy sirve el build; el service worker solo existe en build).
 
 ## Convenciones
