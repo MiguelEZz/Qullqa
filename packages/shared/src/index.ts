@@ -5,6 +5,7 @@ export * from './crops.ts';
 export * from './observations.ts';
 export * from './preferences.ts';
 export * from './engineInput.ts';
+export type * from './valley.ts';
 
 /**
  * Procedencia de cada valor (spec 15.1). Ningún número llega a la UI sin ella.

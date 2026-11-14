@@ -6,3 +6,6 @@ dist/
 infra/data/
 apps/api/out/
 *.pem
+*.swp
+.*.swp
+*.swo
