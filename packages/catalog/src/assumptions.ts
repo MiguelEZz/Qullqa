@@ -46,8 +46,10 @@ export interface Assumptions {
     phMax: number;
   };
   sowing: {
-    /** Lluvia acumulada en 3 días (mm) que abre la siembra en secano. */
-    onsetRain3d_mm: number;
+    /** Lluvia acumulada en los últimos 10 días (mm) que abre la siembra en secano. */
+    onsetRain10d_mm: number;
+    /** Diagnóstico: lluvia mínima en los 20 días siguientes para no contar un «falso inicio» (mm). */
+    onsetFollow20d_mm: number;
     /** Tmin ajustada mínima para sembrar (°C). */
     minTmin_C: number;
   };
@@ -163,7 +165,7 @@ export const ASSUMPTIONS: Assumptions = {
   soil: { runoffThreshold_mm: 20, runoffFraction: 0.3, bareSoilKc: 0.3, profileDepth_m: 1.5 },
   // Spec §6: umbrales 15 % y 40 %
   aptitude: { frostMarginal: 0.15, frostNotApt: 0.4, gddMarginal: 0.15, gddNotApt: 0.4, waterChronicNotApt: 0.6, waterMarginal: 0.3, altMarginMarginal_m: 200, phMin: 4.5, phMax: 8.5 },
-  sowing: { onsetRain3d_mm: 15, minTmin_C: -2 },
+  sowing: { onsetRain10d_mm: 20, onsetFollow20d_mm: 10, minTmin_C: -2 },
   damage: { frostPerEvent: 0.15, heatPerEvent: 0.05, maxDamage: 0.95 },
   // Caudal de un turno: SUPUESTO (preguntar al comité de regantes / en la app). Eficiencia de riego por gravedad en andenes.
   irrigation: { flow_Ls: 30, efficiency: 0.6 },

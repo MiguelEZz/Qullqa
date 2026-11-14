@@ -83,7 +83,8 @@ App del agricultor (PWA) → datos listos para el cerebro:
 ## Estado del cerebro (hecho)
 
 - Datos: POWER diario 1981→2025 (celda a 4 352 m), SRTM, SoilGrids, WorldCover y MODIS NDVI/LST **vía Planetary Computer** (ORNL es muy lento: ~35 s/petición). δ_posición mensual = Tmin POWER corregida − LST nocturna Aqua, menos 2 °C por ser temperatura de superficie (supuesto).
-- La lluvia de POWER en el Colca parece subestimada (~220 mm/año): se corrige con IMERG mensual cuando GES DISC acepte el token.
+- Lluvia: POWER daba ~220 mm/año en el Colca; corregida por mes con GPM IMERG V07 (2001–2024) → ~400 mm/año. Factores ×1,1 (oct–nov) a ×2,5 (dic–may). `rainRaw` guarda la original.
+- Inicio de lluvias: 10 días con ≥ 20 mm desde el 1 de set (+ 10 mm en los 20 siguientes en el diagnóstico). Mediana ≈ 15 dic.
 - Motor: corrida comunitaria completa en ~3 s (6 parcelas). La racionalidad individual compara contra «todos hacen su mejor plan por separado».
 - Pendiente: worker + API + tarjetas en la app; vista proyector.
 

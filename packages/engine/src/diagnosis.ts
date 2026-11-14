@@ -44,9 +44,12 @@ export function seasonProfiles(c: ParcelClimate, a: Assumptions): SeasonProfile[
       const d = c.days[i]!;
       const r = c.rain[i]!;
       total += r;
-      if (onset < 0 && i - i0 > 30) {
-        const r3 = r + c.rain[i - 1]! + c.rain[i - 2]!;
-        if (r3 >= a.sowing.onsetRain3d_mm) onset = i - i0;
+      // Inicio de lluvias: desde el 1 de set, 10 días con ≥ 20 mm y que siga lloviendo después (sin falso inicio)
+      if (onset < 0 && i - i0 >= 62 && i + 20 <= i1) {
+        let r10 = 0, f20 = 0;
+        for (let j = i - 9; j <= i; j++) r10 += c.rain[j]!;
+        for (let j = i + 1; j <= i + 20; j++) f20 += c.rain[j]!;
+        if (r10 >= a.sowing.onsetRain10d_mm && f20 >= a.sowing.onsetFollow20d_mm) onset = i - i0;
       }
       if (inMonths(d.month, [11, 12, 1, 2, 3])) {
         dry = r < a.climate.rainyDay_mm ? dry + 1 : 0;
@@ -83,7 +86,7 @@ export function trends(profiles: SeasonProfile[]) {
     const change = r.senSlope * per;
     const significant = r.pValue < 0.05;
     const text = significant
-      ? `${label}: ${change > 0 ? 'subió' : 'bajó'} ${Math.abs(round(change, 1))} ${unit} cada ${per} años (tendencia clara, p = ${round(r.pValue, 3)}).`
+      ? `${label}: ${change > 0 ? 'subió' : 'bajó'} ${Math.abs(round(change, 1))} ${unit} cada ${per} años (tendencia clara, p = ${round(r.pValue, 3)}). Ojo: en un reanálisis una tendencia puede venir de cambios en los datos asimilados; conviene confirmarla con estaciones.`
       : `${label}: sin tendencia clara en ${n} campañas (p = ${round(r.pValue, 2)}).`;
     return { variable: key, ...r, changePerDecade: round(change, 2), significant, text, provenance: 'estimated' as const };
   };

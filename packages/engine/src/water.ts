@@ -78,8 +78,9 @@ export function sowingDay(c: ParcelClimate, crop: CropCard, campaign: number, ir
     last = i;
     if (c.tmin[i]! < a.sowing.minTmin_C) continue;
     if (irrigated) return { idx: i, late: false };
-    const r3 = c.rain[i]! + (c.rain[i - 1] ?? 0) + (c.rain[i - 2] ?? 0);
-    if (r3 >= a.sowing.onsetRain3d_mm) return { idx: i, late: false };
+    let r10 = 0;
+    for (let j = Math.max(0, i - 9); j <= i; j++) r10 += c.rain[j]!;
+    if (r10 >= a.sowing.onsetRain10d_mm) return { idx: i, late: false };
   }
   return { idx: last, late: true };
 }
