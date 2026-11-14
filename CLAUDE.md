@@ -80,6 +80,13 @@ App del agricultor (PWA) → datos listos para el cerebro:
 - «Enviar mis datos» marca `memberships.submitted_at`; editar parcelas o prioridades lo limpia.
 - **Contrato con el cerebro**: `EngineInput` (`packages/shared/src/engineInput.ts`), lo arma `apps/api/src/engineInput.ts` (incluye vecinos a ≤ 50 m). Nunca se expone por HTTP.
 
+## Estado del cerebro (hecho)
+
+- Datos: POWER diario 1981→2025 (celda a 4 352 m), SRTM, SoilGrids, WorldCover y MODIS NDVI/LST **vía Planetary Computer** (ORNL es muy lento: ~35 s/petición). δ_posición mensual = Tmin POWER corregida − LST nocturna Aqua, menos 2 °C por ser temperatura de superficie (supuesto).
+- La lluvia de POWER en el Colca parece subestimada (~220 mm/año): se corrige con IMERG mensual cuando GES DISC acepte el token.
+- Motor: corrida comunitaria completa en ~3 s (6 parcelas). La racionalidad individual compara contra «todos hacen su mejor plan por separado».
+- Pendiente: worker + API + tarjetas en la app; vista proyector.
+
 ## Comandos
 
 ```bash
@@ -89,7 +96,9 @@ pnpm -F @qullqa/api test     # pruebas de privacidad y contrato (usa la BD de do
 pnpm -F @qullqa/api export:input            # lista comunidades
 pnpm -F @qullqa/api export:input <id> [--all]  # escribe apps/api/out/engine-input-<id>.json
 pnpm -F @qullqa/engine test  # pruebas del motor
-pnpm -F @qullqa/data fetch:colca   # descarga y cachea datos NASA del valle
+pnpm -F @qullqa/data fetch:colca   # descarga datos del valle → packages/data/fixtures/colca.json (~5 min)
+pnpm -F @qullqa/data correct:rain  # corrige la lluvia de POWER con GPM IMERG mensual (token Earthdata + GES DISC autorizado)
+pnpm -F @qullqa/engine exec tsx scripts/smoke.ts ../data/fixtures/colca.json   # corrida de prueba (comunidad sintética)
 docker compose -f infra/docker-compose.yml up -d   # Postgres/PostGIS + Caddy
 ./infra/tunnel.sh            # expone Caddy por el dominio estático de ngrok
 ```
