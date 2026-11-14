@@ -69,11 +69,25 @@ docs/         ARCHITECTURE.md y notas
 - Restricciones y las 10 monedas de cada agricultor son **privadas**: la API nunca las devuelve a otros miembros. La vista comunitaria muestra solo agregados y el plan.
 - Las fotos se procesan en el teléfono (ExG en canvas); al servidor sube el índice y, opcionalmente, una miniatura.
 
+## Estado de la carcasa (hecho)
+
+App del agricultor (PWA) → datos listos para el cerebro:
+- Registro/ingreso (celular + PIN de 4 dígitos, scrypt, límite de intentos, cookie JWT httpOnly 90 días).
+- Comunidades: crear (coordinador), unirse por código de 6 letras o QR (`/unirse/:code`).
+- Parcelas: contorno caminando con GPS o dibujado sobre imagen satelital (Esri, z≤17 en el Colca), riego, rotación de 3 campañas. PostGIS valida geometría, área y distancia (≤ 40 km).
+- Prioridades privadas (10 monedas / 8 indicadores), recursos y vetos.
+- 9 observaciones de campo (ExG+Otsu en el teléfono, inclinómetro/brújula, puño, helada, cosecha…), siempre `observed`.
+- «Enviar mis datos» marca `memberships.submitted_at`; editar parcelas o prioridades lo limpia.
+- **Contrato con el cerebro**: `EngineInput` (`packages/shared/src/engineInput.ts`), lo arma `apps/api/src/engineInput.ts` (incluye vecinos a ≤ 50 m). Nunca se expone por HTTP.
+
 ## Comandos
 
 ```bash
 pnpm install
 pnpm dev                     # api + worker + web en paralelo
+pnpm -F @qullqa/api test     # pruebas de privacidad y contrato (usa la BD de docker)
+pnpm -F @qullqa/api export:input            # lista comunidades
+pnpm -F @qullqa/api export:input <id> [--all]  # escribe apps/api/out/engine-input-<id>.json
 pnpm -F @qullqa/engine test  # pruebas del motor
 pnpm -F @qullqa/data fetch:colca   # descarga y cachea datos NASA del valle
 docker compose -f infra/docker-compose.yml up -d   # Postgres/PostGIS + Caddy
