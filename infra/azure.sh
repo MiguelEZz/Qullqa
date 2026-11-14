@@ -59,10 +59,11 @@ case "${1:-}" in
     # Solo estas variables, leídas del .env local; nunca salen por la terminal.
     keys='^(EARTHDATA_TOKEN|PC_SDK_SUBSCRIPTION_KEY|METEOMATICS_USERNAME|METEOMATICS_PASSWORD)='
     grep -E "$keys" .env | "${SSH[@]}" "$USER_VM@$(vm_ip)" "cd ~/qullqa && grep -vE '$keys' .env > .env.tmp; cat >> .env.tmp; mv .env.tmp .env; chmod 600 .env"
-    echo "✓ Claves de datos copiadas. Reinicia con: ./infra/azure.sh deploy"
+    ssh_vm "cd ~/qullqa && sudo docker compose -f infra/docker-compose.prod.yml --env-file .env up -d"
+    echo "✓ Claves de datos copiadas y servicios reiniciados."
     ;;
   logs)
-    ssh_vm 'cd ~/qullqa && sudo docker compose -f infra/docker-compose.prod.yml logs -f --tail 100'
+    ssh_vm 'cd ~/qullqa && sudo docker compose -f infra/docker-compose.prod.yml --env-file .env logs -f --tail 100'
     ;;
   warmup)
     for p in /api/health / /manifest.webmanifest; do curl -s -o /dev/null -w "%{http_code} %{time_total}s $p\n" "https://$DOMAIN$p"; done
