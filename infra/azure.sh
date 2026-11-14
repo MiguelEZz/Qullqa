@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Despliegue de Qullqa en una VM de Azure (mismo docker compose que en GCP).
 #   ./infra/azure.sh create   → grupo + VM Ubuntu 24.04 (Standard_B2s) con IP fija, puertos 80/443 y Docker
+#   ./infra/azure.sh setup    → (VM creada en el portal) solo instala Docker
 #   ./infra/azure.sh ip       → IP fija (para el registro A en Porkbun)
 #   ./infra/azure.sh deploy   → sube el último commit, genera .env de producción si no existe y levanta todo
 #   ./infra/azure.sh secrets  → copia SOLO las claves de datos (Earthdata, Planetary Computer, Meteomatics) al .env de la VM
@@ -15,10 +16,15 @@ VM=${QULLQA_VM:-qullqa}
 LOCATION=${QULLQA_LOCATION:-brazilsouth}   # São Paulo; prueba chilecentral si tu suscripción lo permite
 SIZE=${QULLQA_SIZE:-Standard_B2s}          # 2 vCPU, 4 GB
 DOMAIN=${QULLQA_DOMAIN:-qullqa.us}
-USER_VM=qullqa
+# VM ya creada en el portal: VM_HOST / VM_USER / VM_SSH_KEY en .env (sin az)
+env_get() { grep -E "^$1=" .env 2>/dev/null | tail -1 | cut -d= -f2-; }
+HOST=${QULLQA_HOST:-$(env_get VM_HOST)}
+USER_VM=${QULLQA_USER:-$(env_get VM_USER)}; USER_VM=${USER_VM:-qullqa}
+KEY=$(env_get VM_SSH_KEY); KEY=${KEY/#\~/$HOME}
+SSH=(ssh -o StrictHostKeyChecking=accept-new ${KEY:+-i "$KEY"})
 
-vm_ip() { az vm show -d -g "$RG" -n "$VM" --query publicIps -o tsv; }
-ssh_vm() { ssh -o StrictHostKeyChecking=accept-new "$USER_VM@$(vm_ip)" "$1"; }
+vm_ip() { if [[ -n "$HOST" ]]; then echo "$HOST"; else az vm show -d -g "$RG" -n "$VM" --query publicIps -o tsv; fi; }
+ssh_vm() { "${SSH[@]}" "$USER_VM@$(vm_ip)" "$1"; }
 
 case "${1:-}" in
   create)
@@ -31,12 +37,15 @@ case "${1:-}" in
     ssh_vm 'sudo apt-get update -q && sudo apt-get install -y -q docker.io docker-compose-v2'
     echo "✓ VM lista. IP fija: $(vm_ip)"
     ;;
+  setup)   # VM creada en el portal: solo instala Docker
+    ssh_vm 'sudo apt-get update -q && sudo apt-get install -y -q docker.io docker-compose-v2 && sudo docker --version && sudo docker compose version'
+    ;;
   ip)
     vm_ip
     ;;
   deploy)
     git diff --quiet || echo "⚠ Hay cambios sin commit: se despliega el último commit."
-    git archive --format=tar.gz HEAD | ssh "$USER_VM@$(vm_ip)" 'mkdir -p ~/qullqa && tar xz -C ~/qullqa'
+    git archive --format=tar.gz HEAD | "${SSH[@]}" "$USER_VM@$(vm_ip)" 'mkdir -p ~/qullqa && tar xz -C ~/qullqa'
     # .env de producción: se genera UNA vez en la VM con secretos nuevos (nunca se copia el .env local entero)
     ssh_vm "cd ~/qullqa && if [ ! -f .env ]; then
       P=\$(openssl rand -hex 16); J=\$(openssl rand -hex 32)
@@ -49,7 +58,7 @@ case "${1:-}" in
   secrets)
     # Solo estas variables, leídas del .env local; nunca salen por la terminal.
     keys='^(EARTHDATA_TOKEN|PC_SDK_SUBSCRIPTION_KEY|METEOMATICS_USERNAME|METEOMATICS_PASSWORD)='
-    grep -E "$keys" .env | ssh "$USER_VM@$(vm_ip)" "cd ~/qullqa && grep -vE '$keys' .env > .env.tmp; cat >> .env.tmp; mv .env.tmp .env; chmod 600 .env"
+    grep -E "$keys" .env | "${SSH[@]}" "$USER_VM@$(vm_ip)" "cd ~/qullqa && grep -vE '$keys' .env > .env.tmp; cat >> .env.tmp; mv .env.tmp .env; chmod 600 .env"
     echo "✓ Claves de datos copiadas. Reinicia con: ./infra/azure.sh deploy"
     ;;
   logs)
