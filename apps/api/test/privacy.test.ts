@@ -291,6 +291,23 @@ describe('panel de administración', () => {
     expect((await app.inject({ method: 'GET', url: '/api/admin/overview', headers: asDemo })).statusCode).toBe(403);
     const back = await app.inject({ method: 'POST', url: '/api/auth/stop-acting', headers: asDemo });
     expect(back.statusCode).toBe(200);
+
+    // Vista de la pantalla de una familia: solo demo
+    const v = await app.inject({ method: 'GET', url: `/api/admin/communities/${demo.json().id}/view/${d.demoMembers[0].userId}`, headers: alice.headers });
+    expect(v.statusCode).toBe(200);
+    expect((await app.inject({ method: 'GET', url: `/api/admin/communities/${communityId}/view/${bruno.id}`, headers: alice.headers })).statusCode).toBe(403);
+    expect(d.funnel.registered).toBe(10);
+
+    // CSV anónimos: sin nombres ni teléfonos
+    for (const kind of ['parcels.csv', 'observations.csv', 'communities.csv']) {
+      const csv = await app.inject({ method: 'GET', url: `/api/admin/export/${kind}`, headers: alice.headers });
+      expect(csv.statusCode, kind).toBe(200);
+      expect(csv.headers['content-type']).toContain('text/csv');
+      for (const leak of ['Familia Quispe', 'Test Alice', 'Test Bruno', 'demo-01', ...phones]) expect(csv.body, `${kind} ${leak}`).not.toContain(leak);
+    }
+    const ov = (await app.inject({ method: 'GET', url: '/api/admin/overview', headers: alice.headers })).json();
+    expect(ov.funnel.registered).toBeGreaterThanOrEqual(ov.funnel.joined);
+    expect(ov.obsByWeek).toHaveLength(12);
     process.env.ADMIN_PHONES = '';
   });
 });

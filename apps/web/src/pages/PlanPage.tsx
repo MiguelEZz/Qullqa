@@ -143,7 +143,6 @@ function StrategyView({ card, current, utilitySolo }: { card: StrategyCard; curr
 export function PlanPage() {
   const { cid = '' } = useParams();
   const plan = useApi<PlanResponse>(`/communities/${cid}/plan`);
-  const [tab, setTab] = useState<Sid>('community');
   const [error, setError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const d = plan.data;
@@ -172,8 +171,6 @@ export function PlanPage() {
   if (!d) return <Page title="Plan de siembra" back={`/c/${cid}`}><Loading /></Page>;
 
   const v = d.latest?.view;
-  const me = v?.me;
-  const surplus = v?.community.surplus_soles ?? 0;
 
   return (
     <Page title="Plan de siembra" back={`/c/${cid}`}>
@@ -200,13 +197,25 @@ export function PlanPage() {
         <p className="muted">Aún no hay un plan. Se calcula solo cuando alguien envía sus datos.</p>
       )}
 
-      {v && !me && (
+      {v && <PlanResult view={v} />}
+    </Page>
+  );
+}
+
+/** Resultado del plan tal como lo ve UNA familia (se usa en su app y en la vista previa del panel). */
+export function PlanResult({ view: v }: { view: PlanView }) {
+  const [tab, setTab] = useState<Sid>('community');
+  const me = v.me;
+  const surplus = v.community.surplus_soles ?? 0;
+  return (
+    <>
+      {!me && (
         <Card>
           <p>Tus datos no estaban enviados cuando se calculó este plan. Envíalos desde la página de la comunidad y se recalculará.</p>
         </Card>
       )}
 
-      {v && me && (
+      {me && (
         <>
           <div className="tabs" role="tablist">
             {TABS.map((t) => (
@@ -285,6 +294,6 @@ export function PlanPage() {
           </Card>
         </>
       )}
-    </Page>
+    </>
   );
 }

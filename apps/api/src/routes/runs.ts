@@ -65,6 +65,7 @@ export async function runRoutes(app: FastifyInstance) {
     const [done] = await sql<{ id: string; created_at: Date; finished_at: Date; duration_ms: number; result: Parameters<typeof privateView>[0] }[]>`
       select id, created_at, finished_at, duration_ms, result from runs where community_id = ${id} and status = 'done'
       order by created_at desc limit 1`;
+    if (done && !s.actAs) await sql`update memberships set plan_viewed_at = now() where user_id = ${s.sub} and community_id = ${id}`;
     const [failed] = await sql<{ error: string; created_at: Date }[]>`
       select error, created_at from runs where community_id = ${id} and status = 'failed' order by created_at desc limit 1`;
     return {
