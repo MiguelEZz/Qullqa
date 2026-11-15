@@ -27,10 +27,10 @@ export function Legend({ items }: { items: { label: string; color: string; patte
 }
 
 /** Barras horizontales con etiqueta y valor (una serie). */
-export function BarList({ rows, unit = '', color = 'var(--brick)', digits = 0 }: { rows: { label: ReactNode; value: number; hint?: string; color?: string }[]; unit?: string; color?: string; digits?: number }) {
+export function BarList({ rows, unit = '', color = 'var(--brick)', digits = 0, wrap = false }: { rows: { label: ReactNode; value: number; hint?: string; color?: string }[]; unit?: string; color?: string; digits?: number; wrap?: boolean }) {
   const max = Math.max(1e-9, ...rows.map((r) => r.value));
   return (
-    <ul className="barlist">
+    <ul className={`barlist ${wrap ? 'wrap' : ''}`}>
       {rows.map((r, i) => (
         <li key={i} title={r.hint ?? `${typeof r.label === 'string' ? r.label : ''}: ${fmt(r.value, digits)} ${unit}`}>
           <span className="bl-label">{r.label}</span>
@@ -135,3 +135,37 @@ export function Stat({ label, value, hint }: { label: string; value: ReactNode; 
     </div>
   );
 }
+
+/** Embudo: cada paso como % del primero, con la caída respecto al anterior. */
+export function Funnel({ steps }: { steps: { label: string; value: number }[] }) {
+  const top = Math.max(1, steps[0]?.value ?? 1);
+  return (
+    <ul className="barlist funnel">
+      {steps.map((s, i) => {
+        const prev = i ? steps[i - 1]!.value : s.value;
+        const drop = i && prev > 0 ? Math.round((1 - s.value / prev) * 100) : 0;
+        return (
+          <li key={s.label} title={`${s.label}: ${s.value} (${Math.round((s.value / top) * 100)} % del total)`}>
+            <span className="bl-label">{s.label}</span>
+            <span className="bl-track"><span style={{ width: `${(s.value / top) * 100}%`, background: 'var(--green)' }} /></span>
+            <span className="bl-value">{s.value}{drop > 0 ? <small className="drop"> −{drop} %</small> : null}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Escala secuencial de riesgo (un solo tono, claro → oscuro) con cortes fijos por indicador. */
+export const RISK_STEPS = ['#f1d9cf', '#e0a089', '#c4613f', '#7d2f1c'];
+export const RISK_METRICS = {
+  lossProb: { label: 'Perder la cosecha', unit: '% de campañas', cuts: [0.05, 0.15, 0.3], fmt: (v: number) => `${Math.round(v * 100)} %` },
+  deficitMm: { label: 'Falta de agua', unit: 'mm por campaña', cuts: [40, 80, 150], fmt: (v: number) => `${Math.round(v)} mm` },
+  erosionTha: { label: 'Erosión', unit: 't/ha/año', cuts: [1, 3, 8], fmt: (v: number) => `${v.toFixed(1)} t/ha` },
+} as const;
+export type RiskMetric = keyof typeof RISK_METRICS;
+export const riskColor = (m: RiskMetric, v: number) => RISK_STEPS[RISK_METRICS[m].cuts.filter((c) => v >= c).length]!;
+export const riskLegend = (m: RiskMetric) => {
+  const { cuts, fmt } = RISK_METRICS[m];
+  return [`menos de ${fmt(cuts[0])}`, `${fmt(cuts[0])}–${fmt(cuts[1])}`, `${fmt(cuts[1])}–${fmt(cuts[2])}`, `más de ${fmt(cuts[2])}`].map((label, i) => ({ label, color: RISK_STEPS[i]! }));
+};

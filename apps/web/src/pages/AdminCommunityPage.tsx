@@ -7,9 +7,17 @@ import { useApi } from '../lib/hooks.ts';
 import { useSession } from '../lib/session.tsx';
 import { Card, ErrorMsg, Loading, Page } from '../components/ui.tsx';
 import { MapView } from '../components/MapView.tsx';
-import { BarList, CROP_GROUPS, Columns, Legend, LineChart, StackedRows, Stat, groupOf } from '../components/charts.tsx';
+import { BarList, CROP_GROUPS, Columns, Funnel, Legend, LineChart, RISK_METRICS, StackedRows, Stat, groupOf, riskColor, riskLegend, type RiskMetric } from '../components/charts.tsx';
+import { ConfidenceCard, funnelSteps, type ConfidenceData, type FunnelData } from './AdminPage.tsx';
+import { PlanResult } from './PlanPage.tsx';
+import type { PlanView } from '@qullqa/engine';
+
+type Risk = { lossProb: number; deficitMm: number; erosionTha: number; incomeHa: number; pest: number };
 
 interface Detail {
+  funnel: FunnelData;
+  risk: { parcelId: string; family: number; current: Risk; plan: Risk | null }[];
+  confidence: ConfidenceData | null;
   community: { id: string; name: string; district: string | null; province: string | null; isDemo: boolean; hasValleyData: boolean; center: LonLat; altitudeM: number | null };
   members: number;
   submitted: number;
@@ -40,7 +48,7 @@ const fmt = (n: number, d = 0) => n.toLocaleString('es-PE', { maximumFractionDig
 const pct = (n: number) => `${Math.round(n * 100)} %`;
 const IRR: Record<string, string> = { none: 'secano', canal: 'canal', spring: 'manantial', well: 'pozo', reservoir: 'reservorio' };
 
-type MapMode = 'hoy' | 'plan';
+type MapMode = 'hoy' | 'plan' | 'riesgo';
 
 export function AdminCommunityPage() {
   const { id = '' } = useParams();
@@ -48,6 +56,10 @@ export function AdminCommunityPage() {
   const { refresh } = useSession();
   const nav = useNavigate();
   const [mode, setMode] = useState<MapMode>('plan');
+  const [metric, setMetric] = useState<RiskMetric>('lossProb');
+  const [riskOf, setRiskOf] = useState<'current' | 'plan'>('current');
+  const [screen, setScreen] = useState<{ name: string; view: PlanView } | null>(null);
+  const [screenBusy, setScreenBusy] = useState<string | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +87,21 @@ export function AdminCommunityPage() {
     }
   }
 
+  async function showScreen(userId: string) {
+    setScreenBusy(userId);
+    setError(null);
+    try {
+      const r = await api<{ name: string; latest: { view: PlanView } | null }>(`/admin/communities/${id}/view/${userId}`);
+      if (!r.latest) throw new Error('Esta comunidad todavía no tiene un plan calculado.');
+      setScreen({ name: r.name, view: r.latest.view });
+      setTimeout(() => document.getElementById('pantalla')?.scrollIntoView({ behavior: 'smooth' }), 50);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setScreenBusy(null);
+    }
+  }
+
   async function actAs(userId: string) {
     try {
       const r = await api<{ communityId: string | null }>(`/admin/act-as/${userId}`, { method: 'POST' });
@@ -91,10 +118,25 @@ export function AdminCommunityPage() {
   const totalHa = parcels.reduce((s, p) => s + p.areaHa, 0);
   const selected = parcels.find((p) => p.id === sel);
 
+  const riskByParcel = new Map(data.risk.map((r) => [r.parcelId, r]));
   const mapParcels = parcels.map((p) => {
+    if (mode === 'riesgo') {
+      const r = riskByParcel.get(p.id);
+      const v = r ? (riskOf === 'plan' && r.plan ? r.plan : r.current)[metric] : null;
+      return { id: p.id, ring: p.ring, mine: false, color: v === null ? '#8c857d' : riskColor(metric, v), selected: p.id === sel };
+    }
     const crop = mode === 'plan' ? planByParcel.get(p.id)?.rotation[0] ?? p.rotation[2]! : p.rotation[2]!;
     return { id: p.id, ring: p.ring, mine: false, color: groupOf(crop).color, selected: p.id === sel };
   });
+  const topRisk = [...data.risk].sort((a, b) => b.current[metric] - a.current[metric]).slice(0, 5);
+  // Hectáreas por cultivo: campaña en curso vs año 1 del plan
+  const shift = new Map<string, number>();
+  if (run) for (const p of parcels) {
+    shift.set(p.rotation[2]!, (shift.get(p.rotation[2]!) ?? 0) - p.areaHa);
+    const pl = planByParcel.get(p.id)?.rotation[0];
+    if (pl) shift.set(pl, (shift.get(pl) ?? 0) + p.areaHa);
+  }
+  const shiftRows = [...shift.entries()].filter(([, v]) => Math.abs(v) > 0.005).sort((a, b) => b[1] - a[1]);
 
   // Mezcla de cultivos por campaña (ha por grupo): 3 registradas + 3 del plan
   const mixRow = (label: string, crops: { crop: string; ha: number }[]) => ({
@@ -122,24 +164,68 @@ export function AdminCommunityPage() {
         <Stat label="hectáreas" value={fmt(totalHa, 1)} />
       </div>
 
+      <Card title="Dónde se queda la gente">
+        <Funnel steps={funnelSteps(data.funnel)} />
+      </Card>
+
       <ErrorMsg error={error} />
       {c.hasValleyData && <button onClick={recalc} disabled={busy || waiting}>{waiting ? 'Calculando… (unos segundos)' : 'Recalcular el plan ahora'}</button>}
 
       <Card title="Mapa de parcelas">
         <div className="tabs" role="tablist">
           <button role="tab" className={mode === 'hoy' ? 'on' : ''} aria-selected={mode === 'hoy'} onClick={() => setMode('hoy')}>Lo que siembran hoy</button>
-          <button role="tab" className={mode === 'plan' ? 'on' : ''} aria-selected={mode === 'plan'} onClick={() => setMode('plan')} disabled={!run}>Plan comunitario (año 1)</button>
+          <button role="tab" className={mode === 'plan' ? 'on' : ''} aria-selected={mode === 'plan'} onClick={() => setMode('plan')} disabled={!run}>Plan (año 1)</button>
+          <button role="tab" className={mode === 'riesgo' ? 'on' : ''} aria-selected={mode === 'riesgo'} onClick={() => setMode('riesgo')} disabled={!run}>Riesgo</button>
         </div>
+        {mode === 'riesgo' && (
+          <div className="select">
+            {(Object.keys(RISK_METRICS) as RiskMetric[]).map((k) => (
+              <button key={k} className={`chip ${metric === k ? 'on' : ''}`} onClick={() => setMetric(k)}>{RISK_METRICS[k].label}</button>
+            ))}
+            <button className="chip" onClick={() => setRiskOf(riskOf === 'current' ? 'plan' : 'current')}>{riskOf === 'current' ? 'Con lo de hoy' : 'Con el plan'} ⇄</button>
+          </div>
+        )}
         <MapView center={c.center} parcels={mapParcels} fitTo={parcels.flatMap((p) => p.ring)} onParcelClick={setSel} height="340px" />
-        <Legend items={CROP_GROUPS.map((g) => ({ label: g.label, color: g.color }))} />
+        {mode === 'riesgo'
+          ? <Legend items={riskLegend(metric)} />
+          : <Legend items={CROP_GROUPS.map((g) => ({ label: g.label, color: g.color }))} />}
         {selected ? (
           <div className="notice green small">
             <strong>Familia {selected.family}</strong> · {fmt(selected.areaHa, 2)} ha · {selected.altitudeM ? `${fmt(selected.altitudeM)} m` : 'altura s/d'} · riego: {IRR[selected.irrigation] ?? selected.irrigation}
             <br />Registró: {selected.rotation.map(cropName).join(' → ')}
             {planByParcel.get(selected.id) && <><br />Plan: {planByParcel.get(selected.id)!.rotationText}</>}
+            {riskByParcel.get(selected.id) && <><br />Riesgo hoy (simulado): pérdida {RISK_METRICS.lossProb.fmt(riskByParcel.get(selected.id)!.current.lossProb)} · falta de agua {RISK_METRICS.deficitMm.fmt(riskByParcel.get(selected.id)!.current.deficitMm)} · erosión {RISK_METRICS.erosionTha.fmt(riskByParcel.get(selected.id)!.current.erosionTha)}</>}
           </div>
         ) : <p className="small muted">Toca una parcela para ver su detalle.</p>}
       </Card>
+
+      {run && data.risk.length > 0 && (
+        <Card title={`Dónde ir primero: ${RISK_METRICS[metric].label.toLowerCase()}`}>
+          <p className="small muted">Las 5 parcelas con más riesgo simulado con lo que siembran hoy, y cómo quedarían con el plan. Cambia el tema en la pestaña «Riesgo» del mapa.</p>
+          <table className="table">
+            <thead><tr><th>Parcela</th><th>Hoy</th><th>Con el plan</th></tr></thead>
+            <tbody>
+              {topRisk.map((r) => {
+                const p = parcels.find((x) => x.id === r.parcelId);
+                return (
+                  <tr key={r.parcelId} onClick={() => { setSel(r.parcelId); setMode('riesgo'); }} style={{ cursor: 'pointer' }}>
+                    <td>Familia {r.family}{p?.altitudeM ? ` · ${fmt(p.altitudeM)} m` : ''}</td>
+                    <td>{RISK_METRICS[metric].fmt(r.current[metric])}</td>
+                    <td><strong>{r.plan ? RISK_METRICS[metric].fmt(r.plan[metric]) : '—'}</strong></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Card>
+      )}
+
+      {shiftRows.length > 0 && (
+        <Card title="Si siguen el plan: hectáreas que suben y bajan">
+          <BarList rows={shiftRows.map(([crop, v]) => ({ label: `${v > 0 ? '▲' : '▼'} ${cropName(crop)}`, value: Math.abs(v), color: v > 0 ? 'var(--green)' : 'var(--bad)', hint: `${cropName(crop)}: ${v > 0 ? '+' : '−'}${fmt(Math.abs(v), 2)} ha` }))} unit="ha" digits={2} />
+          <p className="small muted">Campaña en curso frente al primer año del plan coordinado. Sirve para prever semilla, mercado y asistencia técnica.</p>
+        </Card>
+      )}
 
       <Card title="Mezcla de cultivos por campaña (ha)">
         <StackedRows rows={mix} />
@@ -193,13 +279,26 @@ export function AdminCommunityPage() {
       )}
 
       {data.demoMembers.length > 0 && (
-        <Card title="Ver la app como una familia demo">
-          <p className="small muted">Entras con su cuenta (12 h) para ver lo que vería en su celular. Un aviso arriba te permite volver al panel.</p>
+        <Card title="Lo que ve cada familia en su celular">
+          <p className="small muted">Toca una familia demo para ver su pantalla de resultados aquí mismo. «Entrar como» abre la app completa con su cuenta (12 h).</p>
           <div className="chips">
-            {data.demoMembers.map((u) => <button key={u.userId} className="chip" onClick={() => void actAs(u.userId)}>{u.family}. {u.name.replace(' (demo)', '')}</button>)}
+            {data.demoMembers.map((u) => (
+              <button key={u.userId} className={`chip ${screen?.name === u.name ? 'on' : ''}`} onClick={() => void showScreen(u.userId)} disabled={screenBusy === u.userId}>
+                {u.family}. {u.name.replace(' (demo)', '').replace('Familia ', '')}
+              </button>
+            ))}
           </div>
+          {screen && (
+            <div id="pantalla">
+              <h3>Pantalla de {screen.name.replace(' (demo)', '')} · Plan de siembra</h3>
+              <div className="phone"><PlanResult view={screen.view} /></div>
+              <button className="secondary" onClick={() => void actAs(data.demoMembers.find((m) => m.name === screen.name)!.userId)}>Entrar como esta familia (app completa)</button>
+            </div>
+          )}
         </Card>
       )}
+
+      {data.confidence && <ConfidenceCard c={data.confidence} />}
 
       <Card title="Qué le importa a la comunidad">
         {data.priorities.avgCoins ? (
@@ -253,6 +352,13 @@ export function AdminCommunityPage() {
           <p className="small muted">Altura de referencia {fmt(dg.elevationM)} m. Son estimaciones de reanálisis y satélite: confirmar tendencias con estaciones.</p>
         </Card>
       )}
+
+      <Card title="Descargar los datos de esta comunidad (CSV)">
+        <div className="downloads">
+          <a className="btn secondary" href={`/api/admin/export/parcels.csv?community=${c.id}`} download>Parcelas</a>
+          <a className="btn secondary" href={`/api/admin/export/observations.csv?community=${c.id}`} download>Observaciones</a>
+        </div>
+      </Card>
 
       {run && (
         <Card title="Fuentes">

@@ -265,3 +265,11 @@ footer.site p { margin: 6px 0; }
 .table th, .table td { padding: 7px 6px; border-bottom: 1px solid var(--line); text-align: right; }
 .table th:first-child, .table td:first-child { text-align: left; }
 .table th { color: var(--muted); font-weight: 600; }
+.funnel .drop { color: var(--bad); font-size: .78rem; }
+.phone { max-width: 400px; margin: 10px auto; padding: 14px 12px; border: 10px solid var(--fg); border-radius: 34px; background: var(--bg); max-height: 760px; overflow-y: auto; box-shadow: var(--shadow); }
+.phone .card { box-shadow: none; }
+.downloads { display: grid; gap: 8px; }
+.downloads a { margin: 0; }
+.select { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.barlist.wrap li { grid-template-columns: 1fr auto; row-gap: 3px; }
+.barlist.wrap .bl-label { grid-column: 1 / -1; white-space: normal; }

@@ -4,10 +4,13 @@ import { OBSERVATION_META, cropName, type ObservationType } from '@qullqa/shared
 import { api } from '../api.ts';
 import { useApi } from '../lib/hooks.ts';
 import { Card, ErrorMsg, Loading, Page } from '../components/ui.tsx';
-import { BarList, Columns, Stat, groupOf } from '../components/charts.tsx';
+import { BarList, Columns, Funnel, Stat, groupOf } from '../components/charts.tsx';
 
 interface Overview {
-  totals: Record<'users' | 'users7' | 'communities' | 'submitted' | 'parcels' | 'hectares' | 'observations' | 'runs' | 'runs_failed' | 'run_avg_ms', number>;
+  totals: Record<'users' | 'users7' | 'active7' | 'active30' | 'communities' | 'submitted' | 'parcels' | 'hectares' | 'observations' | 'runs' | 'runs_failed' | 'run_avg_ms', number>;
+  funnel: FunnelData;
+  obsByWeek: { week: string; n: number }[];
+  confidence: ConfidenceData;
   signups: { day: string; n: number }[];
   obsByType: { type: string; n: number }[];
   cropArea: { crop: string; ha: number; parcels: number }[];
@@ -15,6 +18,35 @@ interface Overview {
     id: string; name: string; province: string | null; is_demo: boolean; has_valley: boolean; members: number; submitted: number;
     parcels: number; hectares: number; observations: number; frosts: number; last_run: string | null; last_status: string | null;
   }[];
+}
+
+export type FunnelData = Record<'registered' | 'joined' | 'parcel' | 'priorities' | 'submitted' | 'viewed', number>;
+export type ConfidenceData = { families: number; levels: Record<string, number>; missing: { text: string; count: number }[] };
+
+export const funnelSteps = (f: FunnelData) => [
+  { label: 'Se registró', value: f.registered },
+  { label: 'Se unió a su comunidad', value: f.joined },
+  { label: 'Marcó una parcela', value: f.parcel },
+  { label: 'Puso sus prioridades', value: f.priorities },
+  { label: 'Envió sus datos', value: f.submitted },
+  { label: 'Miró su plan', value: f.viewed },
+];
+
+/** Confianza de los planes y qué dato falta más seguido: guía qué pedir en campo. */
+export function ConfidenceCard({ c }: { c: ConfidenceData }) {
+  if (!c.families) return null;
+  const pc = (n: number) => Math.round((n / c.families) * 100);
+  return (
+    <Card title="Qué tan seguros están los planes">
+      <p className="small">
+        De {c.families} {c.families === 1 ? 'familia' : 'familias'} con plan: <span className="badge green">alta {c.levels.alta ?? 0}</span>{' '}
+        <span className="badge gray">media {c.levels.media ?? 0}</span> <span className="badge">baja {c.levels.baja ?? 0}</span>
+      </p>
+      <h3>Lo que más falta para subir la confianza</h3>
+      <BarList rows={c.missing.map((m) => ({ label: m.text.replace(/#/g, '…'), value: pc(m.count), hint: `${m.text.replace(/#/g, '…')}: ${m.count} familias` }))} unit="%" color="var(--brick)" wrap />
+      <p className="small muted">Porcentaje de familias a las que les falta ese dato. Pedir primero lo de arriba.</p>
+    </Card>
+  );
 }
 
 const fmt = (n: number, d = 0) => n.toLocaleString('es-PE', { maximumFractionDigits: d });
@@ -40,7 +72,7 @@ export function AdminPage() {
 
   if (o.error) return <Page title="Panel" back="/"><ErrorMsg error={o.error} /></Page>;
   if (!o.data) return <Page title="Panel" back="/"><Loading /></Page>;
-  const { totals: t, signups, obsByType, cropArea, communities } = o.data;
+  const { totals: t, signups, obsByType, cropArea, communities, funnel, obsByWeek, confidence } = o.data;
   const demoCommunity = communities.find((c) => c.is_demo);
 
   return (
@@ -49,6 +81,7 @@ export function AdminPage() {
 
       <div className="stats-grid">
         <Stat label="agricultores" value={fmt(t.users)} hint={`${t.users7} nuevos en 7 días`} />
+        <Stat label="activos en 7 días" value={fmt(t.active7)} hint={`${t.active30} en 30 días`} />
         <Stat label="comunidades activas" value={fmt(t.communities)} />
         <Stat label="enviaron datos" value={fmt(t.submitted)} />
         <Stat label="parcelas" value={fmt(t.parcels)} />
@@ -89,6 +122,17 @@ export function AdminPage() {
         </ul>
       </Card>
 
+      <Card title="Dónde se queda la gente">
+        <Funnel steps={funnelSteps(funnel)} />
+        <p className="small muted">Agricultores reales en cada paso (sin la demo). En rojo, cuántos se pierden respecto al paso anterior.</p>
+      </Card>
+
+      <ConfidenceCard c={confidence} />
+
+      <Card title="Observaciones de campo por semana">
+        <Columns data={obsByWeek.map((w) => ({ label: w.week, value: w.n, hint: `Semana del ${w.week}: ${w.n} observaciones` }))} unit="observaciones" color="var(--green)" labelEvery={3} height={120} />
+      </Card>
+
       <Card title="Registros por día (últimos 30 días)">
         <Columns data={signups.map((s) => ({ label: s.day.slice(8), value: s.n, hint: `${s.day}: ${s.n} registros` }))} unit="registros" labelEvery={5} height={130} />
       </Card>
@@ -106,6 +150,15 @@ export function AdminPage() {
           ) : <p className="muted small">Aún no hay observaciones.</p>}
         </Card>
       </div>
+      <Card title="Descargar los datos (CSV, anónimos)">
+        <p className="small muted">Se abren en Excel. Cada familia aparece como un número dentro de su comunidad; nunca nombres ni teléfonos. La columna «demo» marca los datos sintéticos.</p>
+        <div className="downloads">
+          <a className="btn secondary" href="/api/admin/export/communities.csv" download>Comunidades</a>
+          <a className="btn secondary" href="/api/admin/export/parcels.csv" download>Parcelas</a>
+          <a className="btn secondary" href="/api/admin/export/observations.csv" download>Observaciones de campo</a>
+        </div>
+        <p className="small muted">Además, el servidor guarda una copia completa de la base cada día (30 días).</p>
+      </Card>
     </Page>
   );
 }
