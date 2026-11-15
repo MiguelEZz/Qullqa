@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CropIdSchema } from './crops.ts';
+import { CropIdSchema, type CropId } from './crops.ts';
 
 /** Los 8 indicadores del motor (spec sec. 7). */
 export const INDICATORS = [
@@ -38,10 +38,26 @@ export const Constraints = z.object({
 });
 export type Constraints = z.infer<typeof Constraints>;
 
+/** «¿Qué te importa más?»: 1–2 tarjetas en palabras del agricultor (reemplaza a las monedas en la pantalla). */
+export const FOCUS_CARDS = [
+  { id: 'money', icon: '💰', label: 'Ganar más dinero', hint: 'Vender bien mi cosecha' },
+  { id: 'safeHarvest', icon: '🌨️', label: 'No perder mi cosecha', hint: 'Que la helada, la sequía o la plaga no me la quiten' },
+  { id: 'goodLand', icon: '🌱', label: 'Que mi tierra siga buena', hint: 'Que no se lave con la lluvia y siga dando para mis hijos' },
+  { id: 'animals', icon: '🐄', label: 'Comida para mis animales', hint: 'Pasto y forraje para el ganado' },
+] as const;
+export const FocusId = z.enum(['money', 'safeHarvest', 'goodLand', 'animals']);
+export type FocusId = z.infer<typeof FocusId>;
+
 export const PreferencesBody = z.object({
-  coins: Coins,
+  /** Tarjetas elegidas (en orden). Si viene, el servidor calcula las monedas. */
+  focus: z.array(FocusId).min(1, 'Elige al menos una').max(2, 'Elige como máximo dos').refine((f) => new Set(f).size === f.length, 'Repetida').optional(),
+  /** Monedas puestas a mano («Ajustar en detalle»). Si vienen, mandan sobre las tarjetas. */
+  coins: Coins.optional(),
   constraints: Constraints,
   /** Cultivos que NO quiere sembrar. */
   vetoes: z.array(CropIdSchema).max(10),
-});
+}).refine((b) => b.focus || b.coins, 'Elige lo que más te importa');
 export type PreferencesBody = z.infer<typeof PreferencesBody>;
+
+/** Lo que devuelve la API: siempre trae las monedas efectivas y de dónde salen. */
+export type PreferencesView = { focus: FocusId[]; coins: Coins; coinsSource: 'cards' | 'manual'; constraints: Constraints; vetoes: CropId[] };

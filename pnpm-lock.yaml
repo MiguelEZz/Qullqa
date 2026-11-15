@@ -26,6 +26,9 @@ importers:
       '@fastify/jwt':
         specifier: ^10.2.7
         version: 10.2.7
+      '@qullqa/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
       '@qullqa/engine':
         specifier: workspace:*
         version: link:../../packages/engine

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CROPS, INDICATORS, type Coins, type Constraints, type CropId, type IndicatorId, type PreferencesBody } from '@qullqa/shared';
+import { CROPS, INDICATORS, type Coins, type Constraints, type CropId, type IndicatorId, type PreferencesView } from '@qullqa/shared';
 import { api } from '../api.ts';
 import { useApi } from '../lib/hooks.ts';
 import { Card, Choice, ErrorMsg, Field, Loading, Page } from '../components/ui.tsx';
@@ -11,7 +11,7 @@ const DEFAULT_CONSTRAINTS: Constraints = { traction: 'yunta', familyWorkers: 2, 
 export function PrioritiesPage() {
   const { cid = '' } = useParams();
   const nav = useNavigate();
-  const saved = useApi<PreferencesBody | null>(`/communities/${cid}/preferences`);
+  const saved = useApi<PreferencesView | null>(`/communities/${cid}/preferences`);
   const [coins, setCoins] = useState<Coins>(EMPTY_COINS);
   const [constraints, setConstraints] = useState<Constraints>(DEFAULT_CONSTRAINTS);
   const [vetoes, setVetoes] = useState<CropId[]>([]);

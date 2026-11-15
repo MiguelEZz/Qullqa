@@ -45,6 +45,16 @@ export interface Assumptions {
     phMin: number;
     phMax: number;
   };
+  /** «¿Qué te importa más?» → pesos por indicador (antes de normalizar a 10 monedas). */
+  priorities: {
+    /** Peso mínimo de cada indicador: nada queda ignorado. */
+    base: number;
+    /** Puntos que suma cada tarjeta a sus indicadores. */
+    cards: Record<'money' | 'safeHarvest' | 'goodLand' | 'animals', Partial<Record<'water' | 'climateRisk' | 'organicMatter' | 'nitrogen' | 'erosion' | 'pestHealth' | 'income' | 'forage', number>>>;
+    /** La segunda tarjeta elegida pesa esta fracción de la primera. */
+    secondCardShare: number;
+    adjust: { livestockSome: number; livestockMany: number; manyLivestock: number; homeConsumptionSafety: number; sellsIncome: number; rainfedWater: number };
+  };
   /** Reglas de rotación (práctica agronómica andina; supuesto editable): filtran las rotaciones candidatas. */
   rotation: {
     /** Campañas de descanso permitidas en las 3 planificadas. */
@@ -172,6 +182,17 @@ export const ASSUMPTIONS: Assumptions = {
   soil: { runoffThreshold_mm: 20, runoffFraction: 0.3, bareSoilKc: 0.3, profileDepth_m: 1.5 },
   // Spec §6: umbrales 15 % y 40 %
   aptitude: { frostMarginal: 0.15, frostNotApt: 0.4, gddMarginal: 0.15, gddNotApt: 0.4, waterChronicNotApt: 0.6, waterMarginal: 0.3, altMarginMarginal_m: 200, phMin: 4.5, phMax: 8.5 },
+  priorities: {
+    base: 0.5,
+    cards: {
+      money: { income: 4 },
+      safeHarvest: { climateRisk: 2.5, water: 1, pestHealth: 0.5 },
+      goodLand: { erosion: 1.5, organicMatter: 1.5, nitrogen: 1 },
+      animals: { forage: 4 },
+    },
+    secondCardShare: 0.75,
+    adjust: { livestockSome: 0.5, livestockMany: 1, manyLivestock: 10, homeConsumptionSafety: 0.75, sellsIncome: 0.5, rainfedWater: 1 },
+  },
   rotation: { maxFallowSeasons: 1, maxSameCropInRow: 2 },
   sowing: { onsetRain10d_mm: 20, onsetFollow20d_mm: 10, minTmin_C: -2 },
   damage: { frostPerEvent: 0.15, heatPerEvent: 0.05, maxDamage: 0.95 },
