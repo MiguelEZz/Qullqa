@@ -94,16 +94,16 @@ export function ParcelNewPage() {
 
   return (
     <Page title="Nueva parcela" back={`/c/${cid}`}>
-      <Card title="1. Marca el borde de tu parcela">
+      <Card title="1. Marca el borde de tu chacra">
         {!mode && (
           <div className="choices">
-            <button type="button" className="choice" onClick={startWalk}>
-              <strong>🚶 Caminar el borde</strong>
-              <small>Camina alrededor de la parcela con el celular. Lo más exacto.</small>
+            <button type="button" className="choice big-choice" onClick={startWalk}>
+              <span className="emoji" aria-hidden>🚶</span>
+              <span><strong>Caminar el borde</strong><small>Camina alrededor de tu chacra con el celular en la mano. Es lo más exacto.</small></span>
             </button>
-            <button type="button" className="choice" onClick={() => { setMode('draw'); setRing([]); }}>
-              <strong>✏️ Dibujar en el mapa</strong>
-              <small>Toca las esquinas de tu parcela sobre la imagen satelital.</small>
+            <button type="button" className="choice big-choice" onClick={() => { setMode('draw'); setRing([]); }}>
+              <span className="emoji" aria-hidden>✏️</span>
+              <span><strong>Dibujar en el mapa</strong><small>Toca las esquinas de tu chacra sobre la foto del satélite.</small></span>
             </button>
           </div>
         )}
