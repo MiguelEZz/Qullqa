@@ -11,6 +11,7 @@ export function HomePage() {
   return (
     <Page title={`Hola, ${first}`} actions={<Link to="/cuenta" className="badge gray" aria-label="Mi cuenta">Mi cuenta</Link>}>
       <InstallBanner />
+      {me?.isAdmin && <LinkButton to="/admin" variant="secondary">Panel de administración</LinkButton>}
       {mine.length > 0 ? (
         <>
           <p className="lead">Elige tu comunidad para ver tus parcelas y el plan.</p>

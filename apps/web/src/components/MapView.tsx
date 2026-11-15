@@ -8,7 +8,8 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 maplibregl.setWorkerUrl(workerUrl);
 import type { LonLat } from '@qullqa/shared';
 
-export type MapParcel = { id: string; ring: LonLat[]; mine: boolean };
+/** color: relleno propio (p. ej. por cultivo en el panel); si falta, amarillo = mía, blanco = vecino. */
+export type MapParcel = { id: string; ring: LonLat[]; mine: boolean; color?: string; selected?: boolean };
 
 type Props = {
   center: LonLat;
@@ -47,7 +48,7 @@ function parcelsFC(parcels: MapParcel[]) {
       .filter((p) => p.ring.length >= 3)
       .map((p) => ({
         type: 'Feature',
-        properties: { id: p.id, mine: p.mine },
+        properties: { id: p.id, mine: p.mine, color: p.color ?? (p.mine ? '#f2c94c' : '#ffffff'), custom: !!p.color, selected: !!p.selected },
         geometry: { type: 'Polygon', coordinates: [[...p.ring, p.ring[0]!]] },
       })),
   );
@@ -80,8 +81,8 @@ export function MapView({ center, parcels = [], draft, me, onMapClick, onParcelC
       m.addSource('parcels', { type: 'geojson', data: parcelsFC(latest.current.parcels) });
       m.addSource('draft', { type: 'geojson', data: draftFC(latest.current.draft ?? []) });
       m.addSource('me', { type: 'geojson', data: fc([]) });
-      m.addLayer({ id: 'parcels-fill', type: 'fill', source: 'parcels', paint: { 'fill-color': ['case', ['get', 'mine'], '#f2c94c', '#ffffff'], 'fill-opacity': ['case', ['get', 'mine'], 0.45, 0.2] } });
-      m.addLayer({ id: 'parcels-line', type: 'line', source: 'parcels', paint: { 'line-color': ['case', ['get', 'mine'], '#f2c94c', '#ffffff'], 'line-width': ['case', ['get', 'mine'], 3, 1.5] } });
+      m.addLayer({ id: 'parcels-fill', type: 'fill', source: 'parcels', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': ['case', ['get', 'custom'], 0.75, ['get', 'mine'], 0.45, 0.2] } });
+      m.addLayer({ id: 'parcels-line', type: 'line', source: 'parcels', paint: { 'line-color': ['case', ['get', 'selected'], '#ffffff', ['get', 'custom'], '#1c1714', ['get', 'color']], 'line-width': ['case', ['get', 'selected'], 4, ['get', 'custom'], 1.5, ['get', 'mine'], 3, 1.5] } });
       m.addLayer({ id: 'draft-line', type: 'line', source: 'draft', filter: ['==', '$type', 'LineString'], paint: { 'line-color': '#ff7a45', 'line-width': 3, 'line-dasharray': [2, 1] } });
       m.addLayer({ id: 'draft-pts', type: 'circle', source: 'draft', filter: ['==', '$type', 'Point'], paint: { 'circle-radius': 6, 'circle-color': '#ff7a45', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } });
       m.addLayer({ id: 'me', type: 'circle', source: 'me', paint: { 'circle-radius': 8, 'circle-color': '#2f80ed', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });

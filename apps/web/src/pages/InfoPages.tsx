@@ -88,6 +88,7 @@ export function PrivacyPage() {
         <li>Tus vecinos ven el <strong>contorno</strong> de tu parcela en el mapa, sin tu nombre ni tus observaciones.</li>
         <li>La vista de la comunidad muestra solo totales y el plan acordado, nunca las monedas de nadie.</li>
         <li>Tu número de celular no se muestra a nadie.</li>
+        <li>El equipo de Qullqa ve estadísticas para mejorar la herramienta: parcelas y observaciones sin tu nombre («Familia 3»), y promedios de prioridades solo cuando hay al menos 3 familias.</li>
       </ul>
       <h2>Fotos</h2>
       <p>

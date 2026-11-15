@@ -2,6 +2,8 @@ import { useEffect, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DISCLAIMER } from '@qullqa/shared';
 import { useInstallPrompt } from '../lib/hooks.ts';
+import { useSession } from '../lib/session.tsx';
+import { api } from '../api.ts';
 
 export function Page({ title, back, children, actions, hideTitle }: { title: string; back?: string; children: ReactNode; actions?: ReactNode; hideTitle?: boolean }) {
   const nav = useNavigate();
@@ -25,10 +27,24 @@ export function Page({ title, back, children, actions, hideTitle }: { title: str
           {actions}
         </div>
       </header>
+      <ActingBanner />
       {!hideTitle && <h1 className="pagetitle">{title}</h1>}
       {children}
       <SiteFooter />
     </main>
+  );
+}
+
+/** Aviso cuando un administrador está «viendo como» una familia demo. */
+function ActingBanner() {
+  const { me, refresh } = useSession();
+  const nav = useNavigate();
+  if (!me?.actingFor) return null;
+  return (
+    <div className="acting">
+      <span>Estás viendo la app como <strong>{me.name}</strong> (datos sintéticos).</span>
+      <button onClick={() => void api('/auth/stop-acting', { method: 'POST' }).then(refresh).then(() => nav('/admin'))}>Volver al panel</button>
+    </div>
   );
 }
 
