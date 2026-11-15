@@ -176,7 +176,7 @@ input.code { text-transform: uppercase; letter-spacing: .3em; font-size: 1.4rem;
 
 /* ── Portada ──────────────────────────────────────────── */
 .hero { text-align: center; padding: 18px 0 8px; }
-.hero img.mark { width: min(320px, 80%); height: auto; }
+.hero img.mark { width: 96px; height: auto; }
 .hero h1 { font-size: 1.6rem; line-height: 1.2; margin: 14px 0 8px; }
 .hero p { color: var(--muted); margin: 0 auto 10px; max-width: 30em; }
 .steps { list-style: none; counter-reset: s; padding: 0; margin: 0; }

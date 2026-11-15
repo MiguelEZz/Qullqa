@@ -41,19 +41,43 @@ export const Phone = z
   .pipe(z.string().regex(/^\+?\d{9,12}$/, 'Número de celular no válido'));
 export const Pin = z.string().regex(/^\d{4}$/, 'El PIN son 4 números');
 
+/** Versión vigente de los términos y la política de privacidad (se guarda con la aceptación). */
+export const TERMS_VERSION = '2026-11-14';
+
+export const Name = z.string().trim().min(2, 'Escribe tu nombre').max(60);
+
 export const RegisterBody = z.object({
-  name: z.string().trim().min(2, 'Escribe tu nombre').max(60),
+  name: Name,
   phone: Phone,
   pin: Pin,
+  acceptTerms: z.literal(true, { error: 'Debes aceptar los términos y la política de privacidad' }),
 });
 export type RegisterBody = z.infer<typeof RegisterBody>;
 
 export const LoginBody = z.object({ phone: Phone, pin: Pin });
 export type LoginBody = z.infer<typeof LoginBody>;
 
+/** Código de recuperación: 8 caracteres sin letras confusas, se muestra como ABCD-EFGH. */
+export const RecoveryCode = z
+  .string()
+  .transform((s) => s.toUpperCase().replace(/[\s-]/g, ''))
+  .pipe(z.string().regex(/^[A-HJ-NP-Z2-9]{8}$/, 'El código tiene 8 letras y números (por ejemplo ABCD-EF23)'));
+
+export const ResetPinBody = z.object({ phone: Phone, recoveryCode: RecoveryCode, newPin: Pin });
+export const ChangePinBody = z.object({ currentPin: Pin, newPin: Pin });
+export const ConfirmPinBody = z.object({ pin: Pin });
+export const UpdateMeBody = z.object({ name: Name });
+
+/** Respuesta del registro y de la recuperación: el código nuevo se muestra UNA vez. */
+export const AuthResult = z.object({ id: z.string().uuid(), name: z.string(), recoveryCode: z.string().optional() });
+export type AuthResult = z.infer<typeof AuthResult>;
+
 export const Me = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  /** Últimos 3 dígitos del celular (para «Mi cuenta»), nunca el número completo en pantalla ajena. */
+  phoneHint: z.string(),
+  createdAt: z.string(),
   communities: z.array(
     z.object({
       id: z.string().uuid(),

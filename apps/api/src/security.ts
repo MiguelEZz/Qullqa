@@ -1,4 +1,4 @@
-import { randomBytes, scrypt as _scrypt, timingSafeEqual } from 'node:crypto';
+import { randomBytes, randomInt, scrypt as _scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const scrypt = promisify(_scrypt) as (pw: string, salt: Buffer, len: number) => Promise<Buffer>;
@@ -32,4 +32,11 @@ export function recordFailure(phone: string) {
 }
 export function clearFailures(phone: string) {
   failures.delete(phone);
+}
+
+const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin 0/O/1/I
+/** Código de recuperación de 8 caracteres (≈ 40 bits), mostrado como ABCD-EFGH. */
+export function recoveryCode(): { plain: string; display: string } {
+  const plain = Array.from({ length: 8 }, () => ALPHABET[randomInt(ALPHABET.length)]).join('');
+  return { plain, display: `${plain.slice(0, 4)}-${plain.slice(4)}` };
 }

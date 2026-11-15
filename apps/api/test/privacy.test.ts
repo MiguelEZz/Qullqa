@@ -24,10 +24,10 @@ const irrigation = { source: 'canal', turnsPerMonth: 2, hoursPerTurn: 3 };
 async function register(name: string) {
   const phone = `9${Math.floor(10_000_000 + Math.random() * 89_999_999)}`;
   phones.push(phone);
-  const res = await app.inject({ method: 'POST', url: '/api/auth/register', payload: { name, phone, pin: '1234' } });
+  const res = await app.inject({ method: 'POST', url: '/api/auth/register', payload: { name, phone, pin: '1234', acceptTerms: true } });
   expect(res.statusCode).toBe(200);
   const cookie = res.cookies.find((c) => c.name === 'qullqa_session')!;
-  return { id: res.json().id as string, headers: { cookie: `qullqa_session=${cookie.value}` } };
+  return { id: res.json().id as string, phone, recoveryCode: res.json().recoveryCode as string, headers: { cookie: `qullqa_session=${cookie.value}` } };
 }
 
 let alice: Awaited<ReturnType<typeof register>>;
@@ -191,5 +191,41 @@ describe('datos listos para el cerebro', () => {
     const lima = [[-77.03, -12.04], [-77.029, -12.04], [-77.029, -12.039]];
     const r2 = await app.inject({ method: 'POST', url: '/api/parcels', headers: alice.headers, payload: { ...base, ring: lima } });
     expect(r2.statusCode).toBe(400);
+  });
+});
+
+describe('cuenta', () => {
+  it('registrarse exige aceptar los términos', async () => {
+    const r = await app.inject({ method: 'POST', url: '/api/auth/register', payload: { name: 'Test Sin Términos', phone: '911111111', pin: '1234' } });
+    expect(r.statusCode).toBe(400);
+  });
+
+  it('/me no expone el número completo', async () => {
+    const r = await app.inject({ method: 'GET', url: '/api/me', headers: alice.headers });
+    expect(r.json().phoneHint).toBe(alice.phone.slice(-3));
+    expect(r.body).not.toContain(alice.phone);
+  });
+
+  it('olvidé mi PIN: el código de recuperación sirve una sola vez y entrega otro', async () => {
+    expect(carla.recoveryCode).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    const bad = await app.inject({ method: 'POST', url: '/api/auth/reset-pin', payload: { phone: carla.phone, recoveryCode: 'AAAA-AAAA', newPin: '4321' } });
+    expect(bad.statusCode).toBe(401);
+    const ok = await app.inject({ method: 'POST', url: '/api/auth/reset-pin', payload: { phone: carla.phone, recoveryCode: carla.recoveryCode.toLowerCase(), newPin: '4321' } });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json().recoveryCode).not.toBe(carla.recoveryCode);
+    const again = await app.inject({ method: 'POST', url: '/api/auth/reset-pin', payload: { phone: carla.phone, recoveryCode: carla.recoveryCode, newPin: '1111' } });
+    expect(again.statusCode).toBe(401);
+    const login = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { phone: carla.phone, pin: '4321' } });
+    expect(login.statusCode).toBe(200);
+  });
+
+  it('borrar la cuenta pide el PIN y elimina todo', async () => {
+    const d = await register('Test Borrar');
+    const wrong = await app.inject({ method: 'POST', url: '/api/me/delete', headers: d.headers, payload: { pin: '9999' } });
+    expect(wrong.statusCode).toBe(401);
+    const ok = await app.inject({ method: 'POST', url: '/api/me/delete', headers: d.headers, payload: { pin: '1234' } });
+    expect(ok.statusCode).toBe(200);
+    const [u] = await sql<{ n: number }[]>`select count(*)::int as n from users where id = ${d.id}`;
+    expect(u!.n).toBe(0);
   });
 });
