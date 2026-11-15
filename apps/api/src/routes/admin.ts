@@ -33,7 +33,7 @@ function confidenceSummary(results: RunResult[]) {
   const levels = { alta: 0, media: 0, baja: 0 } as Record<string, number>;
   const missing = new Map<string, number>();
   let n = 0;
-  for (const r of results) for (const p of r.participants) {
+  for (const r of results) for (const p of r.participants ?? []) {
     const c = p.strategies.community.confidence;
     levels[c.level] = (levels[c.level] ?? 0) + 1;
     n++;
@@ -139,7 +139,7 @@ export async function adminRoutes(app: FastifyInstance) {
 
     const [run] = await sql<{ id: string; finished_at: Date; duration_ms: number; result: RunResult }[]>`
       select id, finished_at, duration_ms, result from runs where community_id = ${id} and status = 'done' order by created_at desc limit 1`;
-    const r = run?.result;
+    const r = run?.result?.participants ? run.result : undefined; // ignora resultados incompletos
 
     // Riesgo por parcela con lo que siembran hoy y con el plan comunitario (simulado)
     const risk = r ? r.participants.flatMap((p) => p.strategies.current.parcels.map((cur) => {

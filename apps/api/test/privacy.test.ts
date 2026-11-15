@@ -7,11 +7,13 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.ts';
 import { migrate, sql } from '../src/db.ts';
 import { buildEngineInput } from '../src/engineInput.ts';
+import { schedulePersonalPlans } from '../src/routes/runs.ts';
 
 let app: FastifyInstance;
 const phones: string[] = [];
 let communityId = '';
 const slug = `test-${Date.now()}`;
+const extraCommunities: string[] = [];
 
 // Dos parcelas vecinas en el corredor Chivay–Yanque (≈ 30 m × 30 m cada una)
 const ringA: [number, number][] = [[-71.6352, -15.6402], [-71.6349, -15.6402], [-71.6349, -15.6399], [-71.6352, -15.6399]];
@@ -75,6 +77,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (communityId) await sql`delete from communities where id = ${communityId}`;
+  if (extraCommunities.length) await sql`delete from communities where id in ${sql(extraCommunities)}`;
   await sql`delete from users where phone in ${sql(phones)}`;
   await app?.close();
   await sql.end();
@@ -177,21 +180,72 @@ describe('datos listos para el cerebro', () => {
     expect(all.participants[0]!.parcels[0]!.neighborIds).toHaveLength(1);
   });
 
-  it('enviar encola un cálculo; la entrada guardada es privada y el plan solo lo ven miembros', async () => {
-    const [run] = await sql<{ status: string; input: { participants: unknown[] } }[]>`select status, input from runs where community_id = ${communityId}`;
-    expect(['queued', 'running', 'done']).toContain(run!.status); // un worker local puede tomarla al instante
-    expect(run!.input.participants).toHaveLength(1);
+  it('si solo él envió, espera a sus vecinos (sin cálculo) y sabe cuándo tendrá su plan personal', async () => {
+    const [n] = await sql<{ n: number }[]>`select count(*)::int as n from runs where community_id = ${communityId}`;
+    expect(n!.n).toBe(0);
+    const plan = (await app.inject({ method: 'GET', url: `/api/communities/${communityId}/plan`, headers: alice.headers })).json();
+    expect(plan.waiting).not.toBeNull();
+    expect(Date.parse(plan.waiting.personalPlanAt) - Date.parse(plan.waiting.since)).toBe(72 * 3600_000);
+  });
+
+  it('cuando un vecino envía, se calcula el plan de la comunidad; la entrada es privada y solo la ven miembros', async () => {
+    const s = await app.inject({ method: 'POST', url: `/api/communities/${communityId}/submit`, headers: bruno.headers });
+    expect(s.statusCode).toBe(200);
+    const [run] = await sql<{ kind: string; input: { participants: unknown[] } }[]>`select kind, input from runs where community_id = ${communityId}`;
+    expect(run!.kind).toBe('community');
+    expect(run!.input.participants).toHaveLength(2);
     const plan = await app.inject({ method: 'GET', url: `/api/communities/${communityId}/plan`, headers: bruno.headers });
     expect(plan.statusCode).toBe(200);
     expect(plan.json().pending?.status ?? plan.json().latest?.view.participantsCount).toBeTruthy();
     expect(plan.body).not.toContain('coins');
     const other = await app.inject({ method: 'GET', url: `/api/communities/${communityId}/plan`, headers: carla.headers });
     expect(other.statusCode).toBe(403);
-    // Un segundo pedido no crea otra corrida: actualiza la que está en cola
-    await app.inject({ method: 'POST', url: `/api/communities/${communityId}/runs`, headers: bruno.headers });
-    await app.inject({ method: 'POST', url: `/api/communities/${communityId}/runs`, headers: bruno.headers });
-    const [n] = await sql<{ n: number }[]>`select count(*)::int as n from runs where community_id = ${communityId} and status = 'queued'`;
-    expect(n!.n).toBeLessThanOrEqual(1);
+    // Ya no existe el botón «calcular mi plan» para los agricultores
+    const ask = await app.inject({ method: 'POST', url: `/api/communities/${communityId}/runs`, headers: bruno.headers });
+    expect(ask.statusCode).toBe(404);
+  });
+
+  it('quien se suma a una comunidad con plan recibe el suyo y los vecinos conservan el de ellos', async () => {
+    // Plan comunitario ya calculado (resultado mínimo: solo lo que usa el cálculo incremental)
+    await sql`delete from runs where community_id = ${communityId}`;
+    const plan = [
+      { parcelId: parcelA, ownerId: alice.id, rotation: ['quinua', 'haba', 'papa'], rotationText: '' },
+    ];
+    await sql`insert into runs (community_id, valley_id, seed, input, status, kind, result, finished_at)
+              values (${communityId}, 'colca-chivay-yanque-coporaque', 1, '{"participants":[]}', 'done', 'community', ${sql.json({ community: { plan } } as never)}, now())`;
+    await app.inject({ method: 'POST', url: `/api/communities/${communityId}/join`, headers: carla.headers });
+    const ringC: [number, number][] = [[-71.6344, -15.6402], [-71.6341, -15.6402], [-71.6341, -15.6399], [-71.6344, -15.6399]];
+    const pc = await app.inject({ method: 'POST', url: '/api/parcels', headers: carla.headers, payload: { communityId, captureMethod: 'draw', irrigation, currentRotation: ['papa', 'haba', 'cebada'], name: 'Chacra de Carla', ring: ringC } });
+    expect(pc.statusCode).toBe(200);
+    await app.inject({ method: 'PUT', url: `/api/communities/${communityId}/preferences`, headers: carla.headers, payload: { focus: ['money'], constraints, vetoes: [] } });
+    await app.inject({ method: 'POST', url: `/api/communities/${communityId}/submit`, headers: carla.headers });
+    const [inc] = await sql<{ kind: string; target_user: string; fixed_plans: Record<string, string[]> }[]>`
+      select kind, target_user, fixed_plans from runs where community_id = ${communityId} and kind = 'incremental'`;
+    expect(inc!.target_user).toBe(carla.id);
+    expect(inc!.fixed_plans[parcelA]).toEqual(['quinua', 'haba', 'papa']);
+    expect(Object.keys(inc!.fixed_plans)).not.toContain(pc.json().id);
+  });
+
+  it('a los 3 días sin vecinos, el agricultor solo recibe un plan personal', async () => {
+    const dave = await register('Test Dave');
+    const [c2] = await sql<{ id: string }[]>`
+      insert into communities (slug, name, district, province, region, listed, valley_id, center)
+      values (${slug + '-b'}, 'Test Coporaque', 'Coporaque', 'Caylloma', 'Arequipa', true, 'colca-chivay-yanque-coporaque', ST_SetSRID(ST_MakePoint(-71.635, -15.64), 4326)::geography)
+      returning id`;
+    extraCommunities.push(c2!.id);
+    await app.inject({ method: 'POST', url: `/api/communities/${c2!.id}/join`, headers: dave.headers });
+    await app.inject({ method: 'POST', url: '/api/parcels', headers: dave.headers, payload: { communityId: c2!.id, captureMethod: 'draw', irrigation, currentRotation: ['papa', 'haba', 'cebada'], name: 'Chacra de Dave', ring: ringA } });
+    await app.inject({ method: 'PUT', url: `/api/communities/${c2!.id}/preferences`, headers: dave.headers, payload: { focus: ['safeHarvest'], constraints, vetoes: [] } });
+    await app.inject({ method: 'POST', url: `/api/communities/${c2!.id}/submit`, headers: dave.headers });
+    await schedulePersonalPlans();
+    let [r] = await sql<{ n: number }[]>`select count(*)::int as n from runs where community_id = ${c2!.id}`;
+    expect(r!.n).toBe(0); // todavía no pasaron 3 días
+    await sql`update memberships set submitted_at = now() - interval '4 days' where user_id = ${dave.id}`;
+    await schedulePersonalPlans();
+    const [p] = await sql<{ kind: string; target_user: string; input: { participants: unknown[] } }[]>`select kind, target_user, input from runs where community_id = ${c2!.id}`;
+    expect(p!.kind).toBe('personal');
+    expect(p!.target_user).toBe(dave.id);
+    expect(p!.input.participants).toHaveLength(1);
   });
 
   it('editar la parcela obliga a reenviar', async () => {
@@ -296,7 +350,7 @@ describe('panel de administración', () => {
     // La comunidad real de la prueba no lista nombres y no muestra promedios con menos de 3 familias
     const real = (await app.inject({ method: 'GET', url: `/api/admin/communities/${communityId}`, headers: alice.headers })).json();
     expect(real.demoMembers).toEqual([]);
-    expect(real.priorities.avgCoins).toBeNull();
+    expect(real.priorities.avgCoins === null).toBe(real.priorities.n < 3);
 
     const nope = await app.inject({ method: 'POST', url: `/api/admin/act-as/${bruno.id}`, headers: alice.headers });
     expect(nope.statusCode).toBe(403);

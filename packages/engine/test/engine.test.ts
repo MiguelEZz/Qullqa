@@ -125,6 +125,14 @@ describe('Corrida comunitaria', () => {
     expect(privateView(r, 'nadie').me).toBeNull();
   });
 
+  it('planes fijos: el recién llegado obtiene su plan y los vecinos conservan el suyo', () => {
+    const fixedPlans = Object.fromEntries(r.community.plan.filter((p) => p.ownerId !== DEMO_INPUT.participants[2]!.userId).map((p) => [p.parcelId, p.rotation]));
+    const inc = runCommunity(makeSnapshot(DEMO_INPUT, valley, CROPS, ASSUMPTIONS, 7, undefined, fixedPlans));
+    for (const p of inc.community.plan) if (fixedPlans[p.parcelId]) expect(p.rotation).toEqual(fixedPlans[p.parcelId]);
+    const mine = inc.participants.find((p) => p.userId === DEMO_INPUT.participants[2]!.userId)!;
+    expect(mine.strategies.community.parcels.length).toBe(DEMO_INPUT.participants[2]!.parcels.length);
+  });
+
   it('determinismo: misma entrada + misma semilla ⇒ salida idéntica', () => {
     const again = runCommunity(makeSnapshot(DEMO_INPUT, valley, CROPS, ASSUMPTIONS, 7));
     expect(JSON.stringify(again)).toBe(JSON.stringify(r));

@@ -22,11 +22,16 @@ export interface RunSnapshot {
   assumptions: Assumptions;
   seed: number;
   whatIf?: WhatIf & { outbreakParcelId?: string };
+  /**
+   * Planes que NO se tocan (parcela → rotación): cuando alguien se suma a una comunidad que ya tiene plan,
+   * los vecinos conservan el suyo y solo se busca el mejor plan para el recién llegado, en ese contexto.
+   */
+  fixedPlans?: Record<string, Rotation>;
 }
 
-export function makeSnapshot(input: EngineInput, valley: ValleyDataset, crops: CropCard[], assumptions: Assumptions, seed: number, whatIf?: RunSnapshot['whatIf']): RunSnapshot {
+export function makeSnapshot(input: EngineInput, valley: ValleyDataset, crops: CropCard[], assumptions: Assumptions, seed: number, whatIf?: RunSnapshot['whatIf'], fixedPlans?: Record<string, Rotation>): RunSnapshot {
   // Copia profunda: lo que cambie después en la BD no altera la corrida guardada
-  return structuredClone({ engineVersion: ENGINE_VERSION, input, valley, crops, assumptions, seed, ...(whatIf ? { whatIf } : {}) });
+  return structuredClone({ engineVersion: ENGINE_VERSION, input, valley, crops, assumptions, seed, ...(whatIf ? { whatIf } : {}), ...(fixedPlans ? { fixedPlans } : {}) });
 }
 
 /**
@@ -150,6 +155,8 @@ export function runCommunity(snap: RunSnapshot): RunResult {
     for (const c of Object.values(m.crops)) apt.set(c.id, assessAptitude(m, c));
     aptByParcel.set(m.id, apt);
     const allowed = [FALLOW.id, ...[...apt.values()].filter((r) => r.aptitude !== 'notApt' && !pl.vetoes.includes(r.crop as never)).map((r) => r.crop)];
+    const fixed = snap.fixedPlans?.[m.id];
+    if (fixed) { candidates.set(m.id, [fixed]); continue; } // plan ya acordado de un vecino: no se toca
     let cands = enumerateRotations(allowed, { ...a.rotation, fallowId: FALLOW.id }, m.currentRotation[2]);
     // Familias que comen de su chacra: al menos un tubérculo en las 3 campañas (papa «cabeza de rotación»), si alguno es apto
     const eatsFromFarm = pl.constraints.market === 'autoconsumo' || pl.constraints.market === 'mixto';
