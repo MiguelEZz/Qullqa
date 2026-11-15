@@ -162,7 +162,7 @@ input.code { text-transform: uppercase; letter-spacing: .25em; font-size: 1.4rem
 .navlist .txt { flex: 1; min-width: 0; }
 .navlist strong { display: block; font-size: 1.08rem; }
 .navlist small { display: block; color: var(--muted); font-weight: 400; font-size: .9rem; }
-.navlist .icon:last-child { color: var(--brick); }
+.navlist a > .icon:last-child { color: var(--brick); }
 
 .checklist { list-style: none; padding: 0; margin: 0 0 6px; }
 .checklist li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; font-size: 1.02rem; }
@@ -336,3 +336,20 @@ footer.site p { margin: 6px 0; }
 .barlist.wrap .bl-label { grid-column: 1 / -1; white-space: normal; }
 .stepper.counter { gap: 10px; }
 .stepper.counter input { width: 96px; text-align: center; font-size: 1.3rem; font-weight: 700; }
+/* Pasos numerados de la comunidad */
+.todo-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.todo-steps li { display: flex; gap: 14px; align-items: flex-start; }
+.todo-steps .num { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 2.5px solid var(--brick); color: var(--brick); font-weight: 700; font-size: 1.15rem; }
+.todo-steps li.done .num { background: var(--green); border-color: var(--green); color: #fff; }
+.todo-steps li > div { flex: 1; min-width: 0; padding-top: 6px; }
+.todo-steps strong { display: block; font-size: 1.1rem; }
+.todo-steps small { display: block; color: var(--muted); }
+.todo-steps li.done small { color: #3f5631; font-weight: 700; }
+.todo-steps .btn, .todo-steps button { margin-top: 10px; }
+.section-title { font-size: 1.2rem; margin: 24px 0 10px; }
+.navitem { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 18px; background: #fff; border: 1.5px solid var(--peach-line); }
+.facts-big { list-style: none; padding: 0; margin: 14px 0 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.facts-big li { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 18px; background: #fff; border: 1.5px solid var(--peach-line); }
+.facts-big span { font-size: .85rem; color: var(--muted); font-weight: 700; }
+.facts-big strong { font-size: 1.35rem; }
+.facts-big small { font-size: .85rem; color: var(--muted); }

@@ -5,6 +5,7 @@ import { INDICATORS, cropName, type IndicatorId, type Provenance } from '@qullqa
 import { api } from '../api.ts';
 import { useApi } from '../lib/hooks.ts';
 import { Card, ErrorMsg, Loading, Page } from '../components/ui.tsx';
+import { Icon } from '../components/Icon.tsx';
 
 /** Respuesta de GET /api/communities/:id/plan (apps/api/src/routes/runs.ts). */
 export interface PlanResponse {
@@ -203,6 +204,45 @@ export function PlanPage() {
 }
 
 /** Resultado del plan tal como lo ve UNA familia (se usa en su app y en la vista previa del panel). */
+/** Lo más importante, en una tarjeta y en palabras simples (el detalle va debajo). */
+function Summary({ me }: { me: NonNullable<PlanView['me']> }) {
+  const com = me.strategies.community, cur = me.strategies.current;
+  const inc = (c: StrategyCard) => c.indicators.income.mean;
+  const loss = (c: StrategyCard) => Math.round(c.indicators.climateRisk.mean * 10);
+  const diff = inc(com) - inc(cur);
+  return (
+    <Card title="Lo más importante" icon="sprout" className="accent">
+      <p className="headline">La próxima campaña te conviene sembrar:</p>
+      <ul className="navlist">
+        {com.parcels.map((p) => (
+          <li key={p.parcelId}>
+            <div className="navitem">
+              <span className="ico-tile"><Icon name="sprout" size={22} /></span>
+              <span className="txt">
+                <strong>{p.rotation[0]?.cropName}</strong>
+                <small>en {p.parcelName}{p.rotation[0]?.sowing ? ` · sembrar cerca del ${p.rotation[0].sowing}` : ''}</small>
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <ul className="facts-big">
+        <li>
+          <span>💰 Ganarías por hectárea</span>
+          <strong>S/ {fmt(inc(com))}</strong>
+          <small>{Math.abs(diff) < 50 ? 'Casi igual que hoy' : diff > 0 ? `S/ ${fmt(diff)} más que hoy` : `S/ ${fmt(-diff)} menos que hoy`}</small>
+        </li>
+        <li>
+          <span>🌨️ Años con pérdida fuerte</span>
+          <strong>{loss(com) === 0 ? 'Casi nunca' : `${loss(com)} de cada 10`}</strong>
+          <small>Hoy: {loss(cur) === 0 ? 'casi nunca' : `${loss(cur)} de cada 10`}</small>
+        </li>
+      </ul>
+      <p className="small muted">Es una simulación con el clima de los últimos 44 años, no una promesa. Revísalo con tu experiencia.</p>
+    </Card>
+  );
+}
+
 export function PlanResult({ view: v }: { view: PlanView }) {
   const [tab, setTab] = useState<Sid>('community');
   const me = v.me;
@@ -215,8 +255,10 @@ export function PlanResult({ view: v }: { view: PlanView }) {
         </Card>
       )}
 
+      {me && <Summary me={me} />}
       {me && (
         <>
+          <h2 className="section-title">Compara las opciones</h2>
           <div className="tabs" role="tablist">
             {TABS.map((t) => (
               <button key={t.id} role="tab" aria-selected={tab === t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>{t.label}</button>

@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { OBSERVATION_META, cropName, type CommunityView, type Parcel, type Readiness } from '@qullqa/shared';
 import { api } from '../api.ts';
 import { useSession } from '../lib/session.tsx';
 import { useApi } from '../lib/hooks.ts';
-import { Card, Check, ErrorMsg, LinkButton, Loading, Page } from '../components/ui.tsx';
+import { Card, ErrorMsg, LinkButton, Loading, Page } from '../components/ui.tsx';
+import { Icon } from '../components/Icon.tsx';
 import { MapView } from '../components/MapView.tsx';
 import type { PlanResponse } from './PlanPage.tsx';
 
@@ -22,24 +23,43 @@ function PlanSummary({ cid, submitted }: { cid: string; submitted: boolean }) {
   const me = d.latest?.view.me;
   const com = me?.strategies.community;
   return (
-    <Card title="Plan de siembra" className={me ? 'accent' : ''}>
+    <Card title="Tu plan de siembra" icon="sprout" className={me ? 'accent' : ''}>
       {d.pending ? (
         <p className="status"><span className="spinner" aria-hidden /> Calculando el plan de la comunidad…</p>
       ) : me && com ? (
         <>
-          <p>
-            Plan coordinado: <strong>{Math.round(com.utility * 100)} de 100</strong> según tus prioridades (hoy: {Math.round(me.strategies.current.utility * 100)}).
-          </p>
-          <ul className="bullets small">
-            {com.parcels.map((p) => <li key={p.parcelId}><strong>{p.parcelName}:</strong> {p.rotation.map((x) => x.cropName).join(' → ')}</li>)}
+          <p className="headline">Para la próxima campaña te conviene sembrar:</p>
+          <ul className="navlist">
+            {com.parcels.map((p) => (
+              <li key={p.parcelId}>
+                <Link to={`/c/${cid}/plan`}>
+                  <span className="ico-tile"><Icon name="sprout" size={22} /></span>
+                  <span className="txt"><strong>{p.rotation[0]?.cropName}</strong><small>en {p.parcelName}{p.rotation[0]?.sowing ? ` · siembra cerca del ${p.rotation[0].sowing}` : ''}</small></span>
+                </Link>
+              </li>
+            ))}
           </ul>
           {d.stale && <p className="small muted">Hay datos nuevos de tus vecinos: puedes recalcular.</p>}
         </>
       ) : (
         <p className="muted small">{submitted ? 'Tu plan aparecerá aquí cuando termine el cálculo.' : 'Envía tus datos para recibir tu plan: lo que siembras hoy, tu mejor plan solo y el plan con tus vecinos.'}</p>
       )}
-      {(d.latest || d.pending) && <LinkButton to={`/c/${cid}/plan`}>{me ? 'Ver mi plan completo' : 'Ver el plan'}</LinkButton>}
+      {(d.latest || d.pending) && <LinkButton to={`/c/${cid}/plan`}>{me ? 'VER MI PLAN COMPLETO' : 'Ver el plan'}</LinkButton>}
     </Card>
+  );
+}
+
+/** Un paso numerado grande: hecho (verde con ✓) o pendiente, con su botón. */
+function Step({ n, done, title, text, children }: { n: number; done: boolean; title: string; text: string; children?: ReactNode }) {
+  return (
+    <li className={done ? 'done' : ''}>
+      <span className="num" aria-hidden>{done ? <Icon name="check" size={20} /> : n}</span>
+      <div>
+        <strong>{title}</strong>
+        <small>{done ? 'Listo' : text}</small>
+        {children}
+      </div>
+    </li>
   );
 }
 
@@ -117,50 +137,51 @@ export function CommunityPage() {
       </p>
       <PlanSummary cid={cid} submitted={!!r.submittedAt} />
 
-      <Card title="Mis datos para el plan" className={r.submittedAt ? 'ok' : ''}>
-        <ul className="checklist">
-          <Check ok={r.hasParcel}>
-            <Link to={`/c/${cid}/parcela/nueva`}>Registrar al menos una parcela</Link> (contorno, riego y qué sembraste)
-          </Check>
-          <Check ok={r.preferencesSaved}>
-            <Link to={`/c/${cid}/prioridades`}>Lo que te importa</Link> (privado: nadie más lo ve)
-          </Check>
-          <Check ok={obsCount >= 3} optional>
-            Observaciones de campo: {obsCount} de {Object.keys(OBSERVATION_META).length} tipos (recomendado: foto de cobertura, puño y pendiente)
-          </Check>
-        </ul>
-        {r.submittedAt ? (
-          <p className="success">
-            ✓ Datos enviados el {new Date(r.submittedAt).toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' })}. Quedan listos para el
-            cálculo de la comunidad. Si cambias algo, vuelve a enviarlos.
+      <Card title={r.submittedAt ? 'Tus datos ya están enviados' : 'Tus pasos para recibir tu plan'} className={r.submittedAt ? 'ok' : 'accent'}>
+        <ol className="todo-steps">
+          <Step n={1} done={r.hasParcel} title="Marca tu chacra" text="Camina el borde con el celular o dibújala en el mapa.">
+            {!r.hasParcel && <LinkButton to={`/c/${cid}/parcela/nueva`} icon="map">Marcar mi chacra</LinkButton>}
+          </Step>
+          <Step n={2} done={r.preferencesSaved} title="Dinos qué te importa" text="Es privado: tus vecinos no lo ven.">
+            {r.hasParcel && !r.preferencesSaved && <LinkButton to={`/c/${cid}/prioridades`} icon="sprout">Elegir lo que me importa</LinkButton>}
+            {r.preferencesSaved && <Link to={`/c/${cid}/prioridades`} className="small">Cambiar</Link>}
+          </Step>
+          <Step n={3} done={!!r.submittedAt} title="Envía tus datos" text="Con eso calculamos el plan de la comunidad.">
+            {!r.submittedAt && r.canSubmit && <button onClick={submit} disabled={busy}>{busy ? 'Enviando…' : 'ENVIAR MIS DATOS'}</button>}
+          </Step>
+        </ol>
+        {r.submittedAt && (
+          <p className="small muted">
+            Enviados el {new Date(r.submittedAt).toLocaleString('es-PE', { dateStyle: 'medium', timeStyle: 'short' })}. Si cambias algo, vuelve a enviarlos.
           </p>
-        ) : (
-          <button onClick={submit} disabled={!r.canSubmit || busy}>
-            {busy ? 'Enviando…' : r.canSubmit ? 'Enviar mis datos a la comunidad' : 'Completa lo que falta para enviar'}
-          </button>
         )}
+        <p className="small muted">
+          Opcional: {obsCount} de {Object.keys(OBSERVATION_META).length} observaciones del campo. Ayudan a que el plan sea más seguro (sobre todo la cosecha).
+        </p>
         <ErrorMsg error={error} />
       </Card>
 
-      <Card title="Mis parcelas">
+      <Card title="Mis chacras" icon="map">
         {parcels.loading && <Loading />}
-        {parcels.data?.length === 0 && <p className="muted">Aún no registras parcelas.</p>}
-        <ul className="list">
+        {parcels.data?.length === 0 && <p className="muted">Aún no marcas ninguna chacra.</p>}
+        <ul className="navlist">
           {parcels.data?.map((p) => (
             <li key={p.id}>
               <Link to={`/c/${cid}/p/${p.id}`}>
-                <strong>{p.name}</strong>
-                <small>
-                  {p.areaHa.toFixed(2)} ha · ahora: {cropName(p.currentRotation[2])} · {p.observationCount} observaciones
-                </small>
+                <span className="ico-tile"><Icon name="sprout" size={22} /></span>
+                <span className="txt">
+                  <strong>{p.name}</strong>
+                  <small>{p.areaHa.toFixed(2)} ha · ahora: {cropName(p.currentRotation[2])} · {p.observationCount} observaciones</small>
+                </span>
+                <Icon name="chevron" />
               </Link>
             </li>
           ))}
         </ul>
-        <LinkButton to={`/c/${cid}/parcela/nueva`} variant="secondary">+ Agregar parcela</LinkButton>
+        <LinkButton to={`/c/${cid}/parcela/nueva`} variant="secondary" icon="plus">Agregar otra chacra</LinkButton>
       </Card>
 
-      <Card title="La comunidad">
+      <Card title="Tu comunidad" icon="users">
         <p className="stats">
           <span><strong>{c.memberCount}</strong> agricultores</span>
           <span><strong>{c.submittedCount}</strong> enviaron datos</span>
@@ -173,10 +194,10 @@ export function CommunityPage() {
           onParcelClick={(id) => allParcels.find((p) => p.id === id)?.mine && nav(`/c/${cid}/p/${id}`)}
           height="260px"
         />
-        <p className="muted small">Amarillo: tus parcelas. Blanco: las de tus vecinos (solo se ve el contorno).</p>
+        <p className="muted small">Amarillo: tus chacras. Blanco: las de tus vecinos (solo se ve el borde).</p>
         {inviteUrl && (
           <>
-            <button className="secondary" onClick={share}>{showInvite ? 'Ocultar invitación' : 'Invitar a mis vecinos'}</button>
+            <button className="secondary" onClick={share}><Icon name="share" size={22} /> {showInvite ? 'Ocultar invitación' : 'Invitar a mis vecinos'}</button>
             {showInvite && (
               <div className="invite">
                 {qr && <img src={qr} alt={`Código QR para unirse a ${c.name}`} />}
@@ -188,13 +209,19 @@ export function CommunityPage() {
         )}
       </Card>
 
-      <Card title="Salir de la comunidad">
-        <p className="small muted">
-          Si sales, se borran tus parcelas, observaciones y prioridades de {c.name}. Los planes ya calculados no cambian.
-        </p>
-        <button className="danger" onClick={leave} disabled={busy}>{confirmLeave ? 'Sí, salir y borrar mis datos aquí' : `Salir de ${c.name}`}</button>
-        {confirmLeave && <button className="link" onClick={() => setConfirmLeave(false)}>No, quedarme</button>}
-      </Card>
+      <div className="below">
+        {!confirmLeave ? (
+          <button className="link" onClick={() => setConfirmLeave(true)}>Salir de {c.name}</button>
+        ) : (
+          <Card title="¿Salir de la comunidad?">
+            <p className="small muted">
+                Si sales, se borran tus chacras, observaciones y lo que te importa en {c.name}. Los planes ya calculados no cambian.
+            </p>
+            <button className="danger" onClick={leave} disabled={busy}>Sí, salir y borrar mis datos aquí</button>
+            <button className="secondary" onClick={() => setConfirmLeave(false)}>No, quedarme</button>
+          </Card>
+        )}
+      </div>
     </Page>
   );
 }

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useSession } from '../lib/session.tsx';
 import { Card, InstallBanner, LinkButton, Page } from '../components/ui.tsx';
+import { Icon } from '../components/Icon.tsx';
 import { CommunitySearch } from '../components/CommunitySearch.tsx';
 
 export function HomePage() {
@@ -9,34 +10,43 @@ export function HomePage() {
   const mine = me?.communities ?? [];
 
   return (
-    <Page title={`Hola, ${first}`} actions={<Link to="/cuenta" className="badge gray" aria-label="Mi cuenta">Mi cuenta</Link>}>
+    <Page title={`Hola, ${first}`} variant="hero" kicker="Bienvenido">
       <InstallBanner />
-      {me?.isAdmin && <LinkButton to="/admin" variant="secondary">Panel de administración</LinkButton>}
       {mine.length > 0 ? (
         <>
-          <p className="lead">Elige tu comunidad para ver tus parcelas y el plan.</p>
-          <Card title="Mis comunidades">
-            <ul className="list">
+          <Card title="Tu comunidad" icon="users">
+            <ul className="navlist">
               {mine.map((c) => (
                 <li key={c.id}>
                   <Link to={`/c/${c.id}`}>
-                    <strong>{c.name}</strong>
-                    <small>Ver mis parcelas, datos y plan →</small>
+                    <span className="ico-tile"><Icon name="pin" size={22} /></span>
+                    <span className="txt"><strong>{c.name}</strong><small>Tus parcelas y tus datos</small></span>
+                    <Icon name="chevron" />
                   </Link>
                 </li>
               ))}
+              {mine[0] && (
+                <li>
+                  <Link to={`/c/${mine[0].id}/plan`}>
+                    <span className="ico-tile"><Icon name="sprout" size={22} /></span>
+                    <span className="txt"><strong>Mi plan de siembra</strong><small>Qué te conviene sembrar</small></span>
+                    <Icon name="chevron" />
+                  </Link>
+                </li>
+              )}
             </ul>
           </Card>
-          <LinkButton to="/comunidades" variant="secondary">Unirme a otra comunidad</LinkButton>
+          <LinkButton to="/comunidades" variant="secondary" icon="search">Unirme a otra comunidad</LinkButton>
         </>
       ) : (
         <>
-          <p className="lead">Para empezar, busca tu comunidad. Te unirás a los vecinos que ya marcaron sus parcelas ahí.</p>
-          <Card>
+          <p className="lead center">Para empezar, busca tu comunidad. Te unirás a los vecinos que ya marcaron sus chacras ahí.</p>
+          <Card title="Busca tu comunidad" icon="search">
             <CommunitySearch autoFocus />
           </Card>
         </>
       )}
+      {me?.isAdmin && <LinkButton to="/admin" variant="secondary" icon="chart">Panel de administración</LinkButton>}
     </Page>
   );
 }
