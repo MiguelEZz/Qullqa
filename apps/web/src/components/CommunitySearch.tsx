@@ -76,7 +76,7 @@ export function CommunitySearch({ autoFocus = false }: { autoFocus?: boolean }) 
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Escribe el nombre: Yanque, Chivay, Uchumayo…"
+          placeholder="Ej.: Yanque, Chivay, Uchumayo"
           autoFocus={autoFocus}
           autoComplete="off"
           enterKeyHint="search"

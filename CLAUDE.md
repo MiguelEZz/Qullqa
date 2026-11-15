@@ -73,7 +73,9 @@ docs/         ARCHITECTURE.md y notas
 
 App del agricultor (PWA) → datos listos para el cerebro:
 - Registro/ingreso (celular + PIN de 4 dígitos, scrypt, límite de intentos, cookie JWT httpOnly 90 días).
-- Comunidades: crear (coordinador), unirse por código de 6 letras o QR (`/unirse/:code`).
+- Comunidades: **catálogo fijo** de 31 pueblos de la sierra de Arequipa (`apps/api/src/communityCatalog.ts`, se siembra al arrancar). Nadie crea comunidades ni hay coordinador/código: el agricultor busca su comunidad (sin tildes), se une y la comunidad la forman quienes marcan parcelas ahí. Invitación por enlace/QR a `/comunidad/:slug`. Solo las que tienen `valley_id` (hoy Chivay, Yanque, Coporaque, Achoma, Ichupampa → Colca) calculan plan.
+- Cuenta: términos y privacidad aceptados al registrarse (`TERMS_VERSION`), código de recuperación de un solo uso para «Olvidé mi PIN» (no hay SMS), Mi cuenta (nombre, PIN, nuevo código, borrar cuenta). Páginas: portada, cómo funciona, términos, privacidad, ayuda, 404. Contacto: `contacto@qullqa.us` (`apps/web/src/lib/site.ts`).
+- Marca provisional: logotipo «Qullqa» en la cabecera, hongo como ícono de app (`apps/web/brand/`, `pnpm -F @qullqa/web icons`). Paleta: ladrillo `#B64A31`, hueso `#F2EEE6`, verde andén `#5E7A4A` (secundario).
 - Parcelas: contorno caminando con GPS o dibujado sobre imagen satelital (Esri, z≤17 en el Colca), riego, rotación de 3 campañas. PostGIS valida geometría, área y distancia (≤ 40 km).
 - Prioridades privadas (10 monedas / 8 indicadores), recursos y vetos.
 - 9 observaciones de campo (ExG+Otsu en el teléfono, inclinómetro/brújula, puño, helada, cosecha…), siempre `observed`.
@@ -86,13 +88,15 @@ App del agricultor (PWA) → datos listos para el cerebro:
 - Lluvia: POWER daba ~220 mm/año en el Colca; corregida por mes con GPM IMERG V07 (2001–2024) → ~400 mm/año. Factores ×1,1 (oct–nov) a ×2,5 (dic–may). `rainRaw` guarda la original.
 - Inicio de lluvias: 10 días con ≥ 20 mm desde el 1 de set (+ 10 mm en los 20 siguientes en el diagnóstico). Mediana ≈ 15 dic.
 - Motor: corrida comunitaria completa en ~3 s (6 parcelas). La racionalidad individual compara contra «todos hacen su mejor plan por separado».
-- Pendiente: worker + API + tarjetas en la app; vista proyector.
+- Conectado a la app: «Enviar mis datos» encola una corrida (tabla `runs`, migración 004); `apps/worker` la ejecuta (SKIP LOCKED + NOTIFY) y guarda resultado y snapshot; `GET /api/communities/:id/plan` devuelve `privateView` (su resultado + agregados, nunca datos de otros). Tarjetas en `/c/:cid/plan`.
+- Pendiente: vista proyector (mapa, heatmap, curva de cooperación, deslizadores, El Niño); tope de agua comunal; mercado autoconsumo; forraje según ganado.
 
 ## Comandos
 
 ```bash
 pnpm install
 pnpm dev                     # api + worker + web en paralelo
+pnpm -F @qullqa/worker start # solo el worker del cerebro
 pnpm -F @qullqa/api test     # pruebas de privacidad y contrato (usa la BD de docker)
 pnpm -F @qullqa/api export:input            # lista comunidades
 pnpm -F @qullqa/api export:input <id> [--all]  # escribe apps/api/out/engine-input-<id>.json
