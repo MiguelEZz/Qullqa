@@ -44,8 +44,8 @@ export function Page({
         <header className="hero big">
           <span className="hero-deco" aria-hidden />
           {topRow}
-          <Link to="/" className="badge-logo" aria-label="Qullqa, ir al inicio">
-            <img src="/hongo.png" alt="" width={64} height={62} />
+          <Link to="/" className="wordmark big" aria-label="Qullqa, ir al inicio">
+            <img src="/logo-qullqa-white-lg.png" alt="Qullqa" width={178} height={80} />
           </Link>
         </header>
       ) : (
@@ -54,8 +54,8 @@ export function Page({
           {topRow}
           {!hideTitle && (
             <div className="hero-title">
-              <Link to="/" className="badge-logo small" aria-label="Qullqa, ir al inicio">
-                <img src="/hongo.png" alt="" width={30} height={29} />
+              <Link to="/" className="wordmark" aria-label="Qullqa, ir al inicio">
+                <img src="/logo-qullqa-white.png" alt="Qullqa" width={62} height={28} />
               </Link>
               <h1>{title}</h1>
             </div>
@@ -65,7 +65,6 @@ export function Page({
       <main>
         {variant === 'hero' && (
           <div className="hero-head">
-            <p className="brand-name">Qullqa</p>
             {kicker && <p className="kicker">{kicker}</p>}
             {!hideTitle && <h1>{title}</h1>}
           </div>

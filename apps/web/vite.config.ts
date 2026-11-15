@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'logo-qullqa.png', 'hongo.png'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'logo-qullqa.png', 'logo-qullqa-white.png', 'logo-qullqa-white-lg.png'],
       manifest: {
         name: 'Qullqa',
         short_name: 'Qullqa',
