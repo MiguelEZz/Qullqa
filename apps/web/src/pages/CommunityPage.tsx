@@ -7,6 +7,41 @@ import { useSession } from '../lib/session.tsx';
 import { useApi } from '../lib/hooks.ts';
 import { Card, Check, ErrorMsg, LinkButton, Loading, Page } from '../components/ui.tsx';
 import { MapView } from '../components/MapView.tsx';
+import type { PlanResponse } from './PlanPage.tsx';
+
+/** Resumen del plan en la página de la comunidad; el detalle está en /c/:cid/plan. */
+function PlanSummary({ cid, submitted }: { cid: string; submitted: boolean }) {
+  const plan = useApi<PlanResponse>(`/communities/${cid}/plan`);
+  const d = plan.data;
+  useEffect(() => {
+    if (!d?.pending) return;
+    const t = setInterval(() => void plan.reload(), 2500);
+    return () => clearInterval(t);
+  }, [d?.pending, plan]);
+  if (!d || !d.hasValleyData) return null;
+  const me = d.latest?.view.me;
+  const com = me?.strategies.community;
+  return (
+    <Card title="Plan de siembra" className={me ? 'accent' : ''}>
+      {d.pending ? (
+        <p className="status"><span className="spinner" aria-hidden /> Calculando el plan de la comunidad…</p>
+      ) : me && com ? (
+        <>
+          <p>
+            Plan coordinado: <strong>{Math.round(com.utility * 100)} de 100</strong> según tus prioridades (hoy: {Math.round(me.strategies.current.utility * 100)}).
+          </p>
+          <ul className="bullets small">
+            {com.parcels.map((p) => <li key={p.parcelId}><strong>{p.parcelName}:</strong> {p.rotation.map((x) => x.cropName).join(' → ')}</li>)}
+          </ul>
+          {d.stale && <p className="small muted">Hay datos nuevos de tus vecinos: puedes recalcular.</p>}
+        </>
+      ) : (
+        <p className="muted small">{submitted ? 'Tu plan aparecerá aquí cuando termine el cálculo.' : 'Envía tus datos para recibir tu plan: lo que siembras hoy, tu mejor plan solo y el plan con tus vecinos.'}</p>
+      )}
+      {(d.latest || d.pending) && <LinkButton to={`/c/${cid}/plan`}>{me ? 'Ver mi plan completo' : 'Ver el plan'}</LinkButton>}
+    </Card>
+  );
+}
 
 export function CommunityPage() {
   const { cid = '' } = useParams();
@@ -80,6 +115,8 @@ export function CommunityPage() {
         {' · '}
         {c.hasValleyData ? <span className="badge green">Datos NASA del valle listos</span> : <span className="badge gray">Datos del valle en preparación</span>}
       </p>
+      <PlanSummary cid={cid} submitted={!!r.submittedAt} />
+
       <Card title="Mis datos para el plan" className={r.submittedAt ? 'ok' : ''}>
         <ul className="checklist">
           <Check ok={r.hasParcel}>

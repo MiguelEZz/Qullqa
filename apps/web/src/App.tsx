@@ -12,6 +12,7 @@ import { ParcelDetailPage } from './pages/ParcelDetailPage.tsx';
 import { ObservationPage } from './pages/ObservationPage.tsx';
 import { PrioritiesPage } from './pages/PrioritiesPage.tsx';
 import { AccountPage } from './pages/AccountPage.tsx';
+import { PlanPage } from './pages/PlanPage.tsx';
 import { RecoverPage } from './pages/RecoverPage.tsx';
 import { LandingPage } from './pages/LandingPage.tsx';
 import { NotFoundPage } from './pages/NotFoundPage.tsx';
@@ -58,6 +59,7 @@ export function App() {
           <Route path="/comunidades" element={<Private><CommunitiesPage /></Private>} />
           <Route path="/" element={<Root />} />
           <Route path="/c/:cid" element={<Private><CommunityPage /></Private>} />
+          <Route path="/c/:cid/plan" element={<Private><PlanPage /></Private>} />
           <Route path="/c/:cid/prioridades" element={<Private><PrioritiesPage /></Private>} />
           <Route path="/c/:cid/parcela/nueva" element={<Private><ParcelNewPage /></Private>} />
           <Route path="/c/:cid/p/:pid" element={<Private><ParcelDetailPage /></Private>} />

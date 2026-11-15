@@ -166,7 +166,10 @@ export function runCommunity(snap: RunSnapshot): RunResult {
   }
 
   // ── Tarjetas por participante ──
-  const first = (m: ParcelModel) => m.campaigns.at(-1)! + 1; // próximas campañas tras el registro
+  // La rotación registrada termina en la campaña en curso (jul–jun) a la fecha de la entrada: el plan empieza en la siguiente.
+  const gen = new Date(input.generatedAt);
+  const nextCampaign = (gen.getUTCMonth() >= 6 ? gen.getUTCFullYear() : gen.getUTCFullYear() - 1) + 1;
+  const first = (m: ParcelModel) => Math.max(nextCampaign, m.campaigns.at(-1)! + 1);
   const participants: ParticipantResult[] = players.map((pl, i) => {
     const idx = c.parcels.map((_, k) => k).filter((k) => c.owner[k] === i);
     const indiv: Plan = sq.slice();
@@ -248,7 +251,9 @@ export function runCommunity(snap: RunSnapshot): RunResult {
   mutualBenefit.push(`Caída de precio por sobreoferta en la feria: ${Math.round(mS.meanPriceDrop * 100)} % → ${Math.round(mC.meanPriceDrop * 100)} % (elasticidad supuesta ε = ${a.market.elasticity}).`);
   if (mS.downstreamErosion_t > 0) mutualBenefit.push(`Suelo que baja a las parcelas de abajo: ${less(mS.downstreamErosion_t, mC.downstreamErosion_t)}.`);
   mutualBenefit.push(`Probabilidad de ruina (rendimiento < 30 %): ${Math.round(mS.ruinProb * 100)} % → ${Math.round(mC.ruinProb * 100)} %.`);
-  mutualBenefit.push(`Excedente de coordinar: S/ ${Math.round(sh.surplus).toLocaleString('es-PE')} por campaña para toda la comunidad, repartido con Shapley (${sh.method === 'exact' ? 'cálculo exacto' : `${sh.samples} permutaciones`}).`);
+  mutualBenefit.push(sh.surplus > 0
+    ? `Excedente de coordinar: S/ ${Math.round(sh.surplus).toLocaleString('es-PE')} por campaña para toda la comunidad, repartido con Shapley (${sh.method === 'exact' ? 'cálculo exacto' : `${sh.samples} permutaciones`}).`
+    : `En soles, coordinar no deja más que sembrar cada uno por su cuenta (${Math.round(sh.surplus).toLocaleString('es-PE')} S/ por campaña): la ventaja está en los otros temas, según las prioridades de cada familia.`);
 
   return {
     engineVersion: ENGINE_VERSION, seed, valleyVersion: valley.version, generatedFor: input.generatedAt,

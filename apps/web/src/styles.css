@@ -197,3 +197,33 @@ footer.site nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 
 footer.site nav a { color: var(--muted); }
 footer.site nav a:hover { color: var(--brick); }
 footer.site p { margin: 6px 0; }
+
+/* ── Plan ─────────────────────────────────────────────── */
+.score { display: flex; align-items: center; gap: 12px; margin: 0 0 6px; }
+.score .big { margin: 0; line-height: 1; }
+.score small { display: block; color: var(--muted); }
+.rotation h3 { margin: 16px 0 6px; }
+.rotation ol { list-style: none; padding: 0; margin: 0; border-left: 3px solid var(--brick-soft); }
+.rotation li { position: relative; padding: 4px 0 10px 16px; }
+.rotation li::before { content: ''; position: absolute; left: -7px; top: 9px; width: 11px; height: 11px; border-radius: 50%; background: var(--brick); }
+.rotation .camp { display: block; font-size: .78rem; color: var(--muted); }
+.rotation small { display: block; color: var(--muted); }
+.indicators { list-style: none; padding: 0; margin: 0; }
+.indicators li { padding: 9px 0; border-bottom: 1px solid var(--line); }
+.indicators li:last-child { border-bottom: 0; }
+.ind-head { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.ind-head strong { flex: 1; }
+.ind-head .up { color: var(--green); font-size: .8rem; font-weight: 700; }
+.ind-head .down { color: var(--bad); font-size: .8rem; font-weight: 700; }
+.indicators small { color: var(--muted); font-size: .84rem; }
+.meter { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: 99px; background: var(--green); }
+.bullets { padding-left: 20px; margin: 4px 0 8px; }
+.bullets li { margin-bottom: 6px; font-size: .93rem; }
+.bullets.good li::marker { color: var(--green); }
+.bullets.warn li::marker { color: var(--warn); }
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.status small { flex-basis: 100%; color: var(--muted); }
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid var(--green); border-right-color: transparent; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

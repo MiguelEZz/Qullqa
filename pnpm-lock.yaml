@@ -51,6 +51,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@qullqa/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
       '@qullqa/shared':
         specifier: workspace:*
         version: link:../../packages/shared
