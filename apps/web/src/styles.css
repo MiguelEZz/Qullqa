@@ -386,3 +386,10 @@ footer.site p { margin: 6px 0; }
 .todo-steps li.current .num { background: var(--brick); color: #fff; }
 .todo-steps li.current strong { color: var(--brick); }
 .todo-steps li.later { opacity: .55; }
+/* Símbolos (sin emojis) */
+.focus-ico { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 20px; background: var(--brick-soft); color: var(--brick); }
+.focus.on .focus-ico { background: var(--brick); color: #fff; }
+.choice-ico, .obs-ico { display: grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 14px; background: var(--brick-soft); color: var(--brick); }
+.obs-ico { width: 40px; height: 40px; border-radius: 12px; }
+.facts-big span { display: flex; align-items: center; gap: 6px; }
+.warn-mark { color: var(--bad); font-weight: 700; }

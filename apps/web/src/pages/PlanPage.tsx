@@ -228,12 +228,12 @@ function Summary({ me }: { me: NonNullable<PlanView['me']> }) {
       </ul>
       <ul className="facts-big">
         <li>
-          <span>💰 Ganarías por hectárea</span>
+          <span><Icon name="coin" size={18} /> Ganarías por hectárea</span>
           <strong>S/ {fmt(inc(com))}</strong>
           <small>{Math.abs(diff) < 50 ? 'Casi igual que hoy' : diff > 0 ? `S/ ${fmt(diff)} más que hoy` : `S/ ${fmt(-diff)} menos que hoy`}</small>
         </li>
         <li>
-          <span>🌨️ Años con pérdida fuerte</span>
+          <span><Icon name="snow" size={18} /> Años con pérdida fuerte</span>
           <strong>{loss(com) === 0 ? 'Casi nunca' : `${loss(com)} de cada 10`}</strong>
           <small>Hoy: {loss(cur) === 0 ? 'casi nunca' : `${loss(cur)} de cada 10`}</small>
         </li>

@@ -5,6 +5,7 @@ import { api } from '../api.ts';
 import { analyzeGreenCover, thumbnailOf, type ExgResult } from '../field/exg.ts';
 import { getFix, type Fix } from '../field/gps.ts';
 import { compassLabel, requestSensorPermission, watchOrientation, type Reading } from '../field/inclinometer.ts';
+import { Icon } from '../components/Icon.tsx';
 import { Card, Choice, ErrorMsg, Field, Page } from '../components/ui.tsx';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -114,7 +115,7 @@ export function ObservationPage() {
           <Card title={t === 'green_cover' ? 'Foto desde arriba' : 'Foto (opcional)'}>
             {t === 'green_cover' && <p className="muted small">Párate y toma la foto mirando hacia el suelo, a la altura del pecho. Que no salga tu sombra ni tus pies.</p>}
             <label className="btn secondary file">
-              📷 {photo ? 'Tomar otra' : 'Tomar foto'}
+              <Icon name="camera" size={22} /> {photo ? 'Tomar otra' : 'Tomar foto'}
               <input type="file" accept="image/*" capture="environment" onChange={(e) => onPhoto(e.target.files?.[0])} hidden />
             </label>
             {exg ? (
@@ -212,7 +213,7 @@ export function ObservationPage() {
           )}
 
           {t === 'green_cover' && !exg && <p className="muted">Toma la foto para calcular la cobertura.</p>}
-          <p className="muted small">{fix ? `📍 Ubicación registrada (±${Math.round(fix.accuracy)} m)` : '📍 Sin ubicación (opcional)'}</p>
+          <p className="muted small">{fix ? `Ubicación registrada (±${Math.round(fix.accuracy)} m)` : 'Sin ubicación (opcional)'}</p>
           <ErrorMsg error={error} />
           <button type="submit" disabled={busy}>{busy ? 'Guardando…' : 'Guardar observación'}</button>
         </Card>

@@ -151,11 +151,11 @@ export function ParcelNewPage() {
         <Card title="¿Cómo quieres marcar tu chacra?">
           <div className="choices">
             <button type="button" className="choice big-choice" onClick={() => void startCorners()}>
-              <span className="emoji" aria-hidden>📍</span>
+              <span className="choice-ico" aria-hidden><Icon name="pin" size={28} /></span>
               <span><strong>Parado en cada esquina</strong><small>Vas a cada esquina de tu chacra y tocas «Marcar esta esquina». Es lo más exacto.</small></span>
             </button>
             <button type="button" className="choice big-choice" onClick={() => { setMode('draw'); setDrawn([]); }}>
-              <span className="emoji" aria-hidden>✏️</span>
+              <span className="choice-ico" aria-hidden><Icon name="pencil" size={28} /></span>
               <span><strong>Dibujar en el mapa</strong><small>Toca las esquinas de tu chacra sobre la foto del satélite.</small></span>
             </button>
           </div>

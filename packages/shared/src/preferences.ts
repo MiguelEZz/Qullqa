@@ -38,12 +38,12 @@ export const Constraints = z.object({
 });
 export type Constraints = z.infer<typeof Constraints>;
 
-/** «¿Qué te importa más?»: 1–2 tarjetas en palabras del agricultor (reemplaza a las monedas en la pantalla). */
+/** «¿Qué te importa más?»: 1–2 tarjetas en palabras del agricultor. `icon` es el nombre de un ícono SVG de la app (sin emojis). */
 export const FOCUS_CARDS = [
-  { id: 'money', icon: '💰', label: 'Ganar más dinero', hint: 'Vender bien mi cosecha' },
-  { id: 'safeHarvest', icon: '🌨️', label: 'No perder mi cosecha', hint: 'Que la helada, la sequía o la plaga no me la quiten' },
-  { id: 'goodLand', icon: '🌱', label: 'Que mi tierra siga buena', hint: 'Que no se lave con la lluvia y siga dando para mis hijos' },
-  { id: 'animals', icon: '🐄', label: 'Comida para mis animales', hint: 'Pasto y forraje para el ganado' },
+  { id: 'money', icon: 'coin', label: 'Ganar más dinero', hint: 'Vender bien mi cosecha' },
+  { id: 'safeHarvest', icon: 'snow', label: 'No perder mi cosecha', hint: 'Que la helada, la sequía o la plaga no me la quiten' },
+  { id: 'goodLand', icon: 'leaf', label: 'Que mi tierra siga buena', hint: 'Que no se lave con la lluvia y siga dando para mis hijos' },
+  { id: 'animals', icon: 'cow', label: 'Comida para mis animales', hint: 'Pasto y forraje para el ganado' },
 ] as const;
 export const FocusId = z.enum(['money', 'safeHarvest', 'goodLand', 'animals']);
 export type FocusId = z.infer<typeof FocusId>;

@@ -78,7 +78,7 @@ export function PrioritiesPage() {
             return (
               <button key={c.id} type="button" className={`focus ${pos >= 0 ? 'on' : ''}`} aria-pressed={pos >= 0} onClick={() => toggleFocus(c.id)}>
                 {pos >= 0 && <span className="order" aria-label={pos === 0 ? 'primera' : 'segunda'}>{pos + 1}</span>}
-                <span className="emoji" aria-hidden>{c.icon}</span>
+                <span className="focus-ico" aria-hidden><Icon name={c.icon} size={38} /></span>
                 <strong>{c.label}</strong>
                 <small>{c.hint}</small>
               </button>

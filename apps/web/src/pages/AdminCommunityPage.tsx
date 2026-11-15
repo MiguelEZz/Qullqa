@@ -235,7 +235,7 @@ export function AdminCommunityPage() {
 
       {run && m && (
         <Card title="Lo que cambia al coordinar">
-          <p className="small muted">Plan calculado el {new Date(run.finishedAt).toLocaleString('es-PE')} en {fmt(run.durationMs / 1000, 1)} s con {run.participants} familias · Shapley {run.shapleyMethod === 'exact' ? 'exacto' : 'por muestreo'}{run.feasible ? '' : ' · ⚠ no se encontró un plan que deje a todos igual o mejor'}</p>
+          <p className="small muted">Plan calculado el {new Date(run.finishedAt).toLocaleString('es-PE')} en {fmt(run.durationMs / 1000, 1)} s con {run.participants} familias · Shapley {run.shapleyMethod === 'exact' ? 'exacto' : 'por muestreo'}{run.feasible ? '' : ' · Atención: no se encontró un plan que deje a todos igual o mejor'}</p>
           <table className="table">
             <thead><tr><th></th><th>Hoy</th><th>Cada uno solo</th><th>Coordinado</th></tr></thead>
             <tbody>
@@ -267,7 +267,7 @@ export function AdminCommunityPage() {
                   <td>{f.family}</td>
                   <td>{Math.round(f.utilityCurrent * 100)}</td>
                   <td>{Math.round(f.utilitySolo * 100)}</td>
-                  <td><strong>{Math.round(f.utilityCommunity * 100)}</strong>{f.rationalityOk ? '' : ' ⚠'}</td>
+                  <td><strong>{Math.round(f.utilityCommunity * 100)}</strong>{f.rationalityOk ? '' : <span title="Queda peor que solo" className="warn-mark"> !</span>}</td>
                   <td>{f.ayni.direction === 'nada' ? '—' : `${f.ayni.direction === 'recibe' ? '+' : '−'}${fmt(f.ayni.jornales, 1)} j`}</td>
                   <td>{f.confidence}</td>
                 </tr>
@@ -304,7 +304,7 @@ export function AdminCommunityPage() {
         {data.priorities.focusCounts && (
           <>
             <h3 style={{ marginTop: 0 }}>Lo que eligieron («¿Qué te importa más?»)</h3>
-            <BarList rows={FOCUS_CARDS.map((f) => ({ label: `${f.icon} ${f.label}`, value: data.priorities.focusCounts![f.id] ?? 0 }))} unit="familias" color="var(--brick)" />
+            <BarList rows={FOCUS_CARDS.map((f) => ({ label: f.label, value: data.priorities.focusCounts![f.id] ?? 0 }))} unit="familias" color="var(--brick)" />
             <h3>Cómo se traduce para el cálculo</h3>
           </>
         )}

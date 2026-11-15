@@ -4,13 +4,14 @@ import { OBSERVATION_META, WATER_SOURCE_LABEL, cropName, type Observation, type 
 import { api } from '../api.ts';
 import { useApi } from '../lib/hooks.ts';
 import { Card, ErrorMsg, Loading, Page } from '../components/ui.tsx';
+import { Icon, type IconName } from '../components/Icon.tsx';
 import { MapView } from '../components/MapView.tsx';
 import { ParcelForm } from '../components/ParcelForm.tsx';
 import { describeObservation } from './observationText.ts';
 
-/** Dibujito para reconocer cada observación sin leer. */
-const OBS_EMOJI: Record<ObservationType, string> = {
-  green_cover: '📷', residue: '🌾', slope: '⛰️', phenology: '🌱', frost: '🌨️', wilting: '🥀', soil_moisture: '✊', erosion: '🌧️', harvest: '🧺',
+/** Símbolo para reconocer cada observación sin leer. */
+const OBS_ICON: Record<ObservationType, IconName> = {
+  green_cover: 'camera', residue: 'wheat', slope: 'mountain', phenology: 'sprout', frost: 'snow', wilting: 'wilt', soil_moisture: 'hand', erosion: 'rain', harvest: 'basket',
 };
 
 export function ParcelDetailPage() {
@@ -73,7 +74,7 @@ export function ParcelDetailPage() {
         <div className="grid">
           {(Object.keys(OBSERVATION_META) as ObservationType[]).map((t) => (
             <Link key={t} className="tile" to={`/c/${cid}/p/${pid}/obs/${t}`}>
-              <span className="emoji" aria-hidden>{OBS_EMOJI[t]}</span>
+              <span className="obs-ico" aria-hidden><Icon name={OBS_ICON[t]} size={24} /></span>
               {OBSERVATION_META[t].label}
             </Link>
           ))}
