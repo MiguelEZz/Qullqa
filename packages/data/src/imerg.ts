@@ -51,6 +51,18 @@ export interface RainCorrection {
   method: string;
 }
 
+export const DRY_MONTH_MM = 5;
+export const FACTOR_MIN = 0.5;
+export const FACTOR_MAX = 3;
+
+/**
+ * Factores mensuales confiables: en meses secos (lluvia media POWER < 5 mm/mes) el cociente IMERG/POWER sale de
+ * números diminutos y puede valer ×3,5; aplicado a un evento raro (p. ej. 109 mm en junio de 2025) lo infla a ~380 mm.
+ */
+export function stabilizeFactors(ratio: number[], powerMonthlyMean: number[]): number[] {
+  return ratio.map((f, i) => (powerMonthlyMean[i]! < DRY_MONTH_MM || !Number.isFinite(f) ? 1 : Math.round(Math.min(FACTOR_MAX, Math.max(FACTOR_MIN, f)) * 1000) / 1000));
+}
+
 export async function imergRainCorrection(token: string, lonLat: [number, number], power: DailyClimate, startYear = 2001, endYear = 2024, log?: (m: string) => void): Promise<RainCorrection> {
   const [li, la] = gridIndex(lonLat);
   const months: [number, number][] = [];
@@ -63,17 +75,16 @@ export async function imergRainCorrection(token: string, lonLat: [number, number
   });
   const powerMonth = new Map<string, number>();
   power.dates.forEach((d, i) => { const k = d.slice(0, 7); powerMonth.set(k, (powerMonth.get(k) ?? 0) + power.rain[i]!); });
-  const im = Array(12).fill(0), pw = Array(12).fill(0);
+  const im = Array(12).fill(0), pw = Array(12).fill(0), n = Array(12).fill(0);
   months.forEach(([y, m], k) => {
     const v = vals[k];
     const p = powerMonth.get(`${y}-${String(m).padStart(2, '0')}`);
     if (v === null || v === undefined || p === undefined) return;
-    im[m - 1] += v; pw[m - 1] += p;
+    im[m - 1] += v; pw[m - 1] += p; n[m - 1]++;
   });
-  // En meses casi secos (jun–ago) el cociente es inestable: si POWER < 5 mm acumulados, factor 1
-  const factorByMonth = im.map((v, i) => (pw[i] > 5 ? Math.round((v / pw[i]) * 1000) / 1000 : 1));
+  const factorByMonth = stabilizeFactors(im.map((v, i) => (pw[i] > 0 ? v / pw[i] : 1)), pw.map((v, i) => (n[i] ? v / n[i] : 0)));
   return {
     factorByMonth, years: [startYear, endYear],
-    method: `Escalado mensual: lluvia diaria POWER × (Σ IMERG del mes / Σ POWER del mes) en ${startYear}–${endYear}. Corrige el sesgo; no agrega días de lluvia.`,
+    method: `Escalado mensual: lluvia diaria POWER × (Σ IMERG del mes / Σ POWER del mes) en ${startYear}–${endYear}, limitado a ${FACTOR_MIN}–${FACTOR_MAX} y sin escalar los meses secos (POWER < ${DRY_MONTH_MM} mm/mes): ahí el cociente es inestable y multiplicaría eventos raros. Corrige el sesgo; no agrega días de lluvia.`,
   };
 }
