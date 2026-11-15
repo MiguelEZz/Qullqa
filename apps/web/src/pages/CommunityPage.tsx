@@ -123,7 +123,7 @@ export function CommunityPage() {
             <Link to={`/c/${cid}/parcela/nueva`}>Registrar al menos una parcela</Link> (contorno, riego y qué sembraste)
           </Check>
           <Check ok={r.preferencesSaved}>
-            <Link to={`/c/${cid}/prioridades`}>Mis prioridades y recursos</Link> (privado: nadie más lo ve)
+            <Link to={`/c/${cid}/prioridades`}>Lo que te importa</Link> (privado: nadie más lo ve)
           </Check>
           <Check ok={obsCount >= 3} optional>
             Observaciones de campo: {obsCount} de {Object.keys(OBSERVATION_META).length} tipos (recomendado: foto de cobertura, puño y pendiente)

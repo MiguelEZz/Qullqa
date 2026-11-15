@@ -211,6 +211,25 @@ describe('datos listos para el cerebro', () => {
   });
 });
 
+describe('«¿Qué te importa más?»', () => {
+  it('las tarjetas se convierten en 10 monedas en el servidor; los animales suben el forraje', async () => {
+    const put = await app.inject({ method: 'PUT', url: `/api/communities/${communityId}/preferences`, headers: bruno.headers, payload: { focus: ['money'], constraints: { ...constraints, livestockHeads: 0 }, vetoes: [] } });
+    expect(put.statusCode).toBe(200);
+    const a = put.json();
+    expect(a.coinsSource).toBe('cards');
+    expect(Object.values(a.coins as Record<string, number>).reduce((x, y) => x + y, 0)).toBe(10);
+    expect(a.coins.income).toBeGreaterThanOrEqual(4);
+    const withAnimals = (await app.inject({ method: 'PUT', url: `/api/communities/${communityId}/preferences`, headers: bruno.headers, payload: { focus: ['money'], constraints: { ...constraints, livestockHeads: 20 }, vetoes: [] } })).json();
+    expect(withAnimals.coins.forage).toBeGreaterThan(a.coins.forage);
+    const get = (await app.inject({ method: 'GET', url: `/api/communities/${communityId}/preferences`, headers: bruno.headers })).json();
+    expect(get.focus).toEqual(['money']);
+    const none = await app.inject({ method: 'PUT', url: `/api/communities/${communityId}/preferences`, headers: bruno.headers, payload: { constraints, vetoes: [] } });
+    expect(none.statusCode).toBe(400);
+    const three = await app.inject({ method: 'PUT', url: `/api/communities/${communityId}/preferences`, headers: bruno.headers, payload: { focus: ['money', 'animals', 'goodLand'], constraints, vetoes: [] } });
+    expect(three.statusCode).toBe(400);
+  });
+});
+
 describe('cuenta', () => {
   it('registrarse exige aceptar los términos', async () => {
     const r = await app.inject({ method: 'POST', url: '/api/auth/register', payload: { name: 'Test Sin Términos', phone: '911111111', pin: '1234' } });

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
-import type { Coins, Constraints, ObservationValue } from '@qullqa/shared';
+import type { Constraints, FocusId, ObservationValue } from '@qullqa/shared';
+import { ASSUMPTIONS, coinsFromFocus } from '@qullqa/catalog';
 import { sql } from '../db.ts';
 import { hashPin } from '../security.ts';
 
@@ -26,7 +27,8 @@ const SECTORS = [
 type Rot = [string, string, string];
 interface Family {
   name: string;
-  coins: Partial<Coins>;
+  /** «¿Qué te importa más?» (1–2 tarjetas), como lo elegiría la familia en la app. */
+  focus: FocusId[];
   constraints: Constraints;
   vetoes: string[];
   /** [sector, posición 0–3 en el sector, rotación de las 3 últimas campañas] */
@@ -39,29 +41,28 @@ const C = (traction: Constraints['traction'], familyWorkers: number, canGetExtra
 // Perfiles variados a propósito: comerciales, ganaderos, conservacionistas, adversos al riesgo.
 // La papa domina (como en el valle real): así se ve el efecto de coordinar sobre plagas y precio.
 const FAMILIES: Family[] = [
-  { name: 'Familia Quispe', coins: { income: 5, climateRisk: 2, water: 2, pestHealth: 1 }, constraints: C('yunta', 3, true, 'feria_local', 4), vetoes: [],
+  { name: 'Familia Quispe', focus: ['money', 'safeHarvest'], constraints: C('yunta', 3, true, 'feria_local', 4), vetoes: [],
     parcels: [[0, 0, ['papa', 'haba', 'papa']], [0, 1, ['papa', 'papa', 'cebada']]] },
-  { name: 'Familia Mamani', coins: { forage: 4, income: 2, water: 2, organicMatter: 2 }, constraints: C('yunta', 2, true, 'mixto', 14), vetoes: ['olluco'],
+  { name: 'Familia Mamani', focus: ['animals', 'money'], constraints: C('yunta', 2, true, 'mixto', 14), vetoes: ['olluco'],
     parcels: [[0, 2, ['cebada', 'papa', 'haba']], [1, 0, ['avena_forrajera', 'papa', 'papa']]] },
-  { name: 'Familia Huamaní', coins: { erosion: 3, organicMatter: 3, nitrogen: 2, water: 2 }, constraints: C('manual', 2, false, 'autoconsumo', 3), vetoes: [],
+  { name: 'Familia Huamaní', focus: ['goodLand'], constraints: C('manual', 2, false, 'autoconsumo', 3), vetoes: [],
     parcels: [[0, 3, ['papa', 'haba', 'descanso']], [1, 1, ['quinua', 'papa', 'haba']]] },
-  { name: 'Familia Condori', coins: { climateRisk: 4, water: 3, income: 2, pestHealth: 1 }, constraints: C('yunta', 4, true, 'autoconsumo', 6), vetoes: [],
+  { name: 'Familia Condori', focus: ['safeHarvest'], constraints: C('yunta', 4, true, 'autoconsumo', 6), vetoes: [],
     parcels: [[1, 2, ['papa', 'papa', 'haba']], [1, 3, ['maiz_amilaceo', 'papa', 'papa']]] },
-  { name: 'Familia Cutipa', coins: { income: 6, pestHealth: 2, water: 2 }, constraints: C('tractor', 2, true, 'intermediario', 0), vetoes: ['tarwi'],
+  { name: 'Familia Cutipa', focus: ['money'], constraints: C('tractor', 2, true, 'intermediario', 0), vetoes: ['tarwi'],
     parcels: [[2, 0, ['papa', 'papa', 'papa']], [2, 1, ['papa', 'haba', 'papa']]] },
-  { name: 'Familia Ccama', coins: { income: 2, climateRisk: 2, water: 2, organicMatter: 2, forage: 2 }, constraints: C('yunta', 3, true, 'mixto', 8), vetoes: [],
+  { name: 'Familia Ccama', focus: ['money', 'animals'], constraints: C('yunta', 3, true, 'mixto', 8), vetoes: [],
     parcels: [[2, 2, ['maiz_amilaceo', 'haba', 'papa']], [2, 3, ['haba', 'papa', 'cebada']]] },
-  { name: 'Familia Choque', coins: { climateRisk: 3, water: 3, nitrogen: 2, organicMatter: 2 }, constraints: C('manual', 1, false, 'autoconsumo', 2), vetoes: ['maiz_amilaceo'],
+  { name: 'Familia Choque', focus: ['safeHarvest', 'goodLand'], constraints: C('manual', 1, false, 'autoconsumo', 2), vetoes: ['maiz_amilaceo'],
     parcels: [[3, 0, ['papa', 'oca', 'haba']], [3, 1, ['olluco', 'papa', 'haba']]] },
-  { name: 'Familia Taco', coins: { income: 4, water: 2, erosion: 2, forage: 2 }, constraints: C('yunta', 2, true, 'feria_local', 5), vetoes: [],
+  { name: 'Familia Taco', focus: ['money', 'goodLand'], constraints: C('yunta', 2, true, 'feria_local', 5), vetoes: [],
     parcels: [[3, 2, ['papa', 'haba', 'papa']], [3, 3, ['cebada', 'papa', 'papa']]] },
-  { name: 'Familia Huaracha', coins: { forage: 5, climateRisk: 3, erosion: 2 }, constraints: C('yunta', 3, true, 'autoconsumo', 20), vetoes: [],
+  { name: 'Familia Huaracha', focus: ['animals', 'safeHarvest'], constraints: C('yunta', 3, true, 'autoconsumo', 20), vetoes: [],
     parcels: [[4, 0, ['papa', 'cebada', 'descanso']], [4, 1, ['avena_forrajera', 'papa', 'cebada']]] },
-  { name: 'Familia Llica', coins: { pestHealth: 4, income: 3, water: 3 }, constraints: C('manual', 3, true, 'feria_local', 4), vetoes: [],
+  { name: 'Familia Llica', focus: ['safeHarvest', 'money'], constraints: C('manual', 3, true, 'feria_local', 4), vetoes: [],
     parcels: [[4, 2, ['papa', 'haba', 'papa']], [4, 3, ['oca', 'papa', 'papa']]] },
 ];
 
-const fullCoins = (c: Partial<Coins>): Coins => ({ water: 0, climateRisk: 0, organicMatter: 0, nitrogen: 0, erosion: 0, pestHealth: 0, income: 0, forage: 0, ...c });
 
 /** Rectángulo de ~60 × 50 m (0,3 ha); 4 por sector en una cuadrícula 2 × 2 que se toca. */
 function parcelRing([lon, lat]: [number, number], pos: number): [number, number][] {
@@ -107,8 +108,9 @@ export async function seedDemoCommunity(now = new Date()): Promise<string> {
         returning id`;
       const uid = u!.id;
       await tx`insert into memberships (user_id, community_id, joined_at, submitted_at) values (${uid}, ${cid}, ${now}, ${now})`;
-      await tx`insert into preferences (user_id, community_id, coins, constraints, vetoes)
-               values (${uid}, ${cid}, ${tx.json(fullCoins(fam.coins))}, ${tx.json(fam.constraints)}, ${fam.vetoes})`;
+      const coins = coinsFromFocus(fam.focus, { livestockHeads: fam.constraints.livestockHeads, market: fam.constraints.market, hasRainfedParcel: false }, ASSUMPTIONS);
+      await tx`insert into preferences (user_id, community_id, focus, coins, coins_source, constraints, vetoes)
+               values (${uid}, ${cid}, ${fam.focus}, ${tx.json(coins)}, 'cards', ${tx.json(fam.constraints)}, ${fam.vetoes})`;
       for (const [k, [sector, pos, rot]] of fam.parcels.entries()) {
         const s = SECTORS[sector]!;
         const pt = points[s.point]!;

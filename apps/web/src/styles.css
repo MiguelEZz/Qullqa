@@ -334,3 +334,5 @@ footer.site p { margin: 6px 0; }
 .select { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
 .barlist.wrap li { grid-template-columns: 1fr auto; row-gap: 3px; }
 .barlist.wrap .bl-label { grid-column: 1 / -1; white-space: normal; }
+.stepper.counter { gap: 10px; }
+.stepper.counter input { width: 96px; text-align: center; font-size: 1.3rem; font-weight: 700; }

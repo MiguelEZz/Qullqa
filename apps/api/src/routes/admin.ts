@@ -125,8 +125,8 @@ export async function adminRoutes(app: FastifyInstance) {
       select id, owner_id, ST_AsGeoJSON(polygon)::json as geo, (ST_Area(polygon) / 10000)::float as area_ha, gps_altitude_m as alt, irrigation, current_rotation as rot
       from parcels where community_id = ${id} order by created_at`;
 
-    const prefs = await sql<{ coins: Record<string, number>; constraints: { traction: string; market: string; livestockHeads: number; familyWorkers: number } }[]>`
-      select coins, constraints from preferences where community_id = ${id}`;
+    const prefs = await sql<{ focus: string[]; coins: Record<string, number>; constraints: { traction: string; market: string; livestockHeads: number; familyWorkers: number } }[]>`
+      select focus, coins, constraints from preferences where community_id = ${id}`;
     const avgCoins = prefs.length >= MIN_GROUP
       ? Object.fromEntries(Object.keys(prefs[0]!.coins).map((k) => [k, prefs.reduce((s, p) => s + (p.coins[k] ?? 0), 0) / prefs.length]))
       : null;
@@ -161,7 +161,11 @@ export async function adminRoutes(app: FastifyInstance) {
         id: p.id, family: fam.get(p.owner_id) ?? 0, ring: (p.geo.coordinates[0] ?? []).slice(0, -1), areaHa: Math.round(p.area_ha * 1000) / 1000,
         altitudeM: p.alt, irrigation: p.irrigation.source, rotation: p.rot,
       })),
-      priorities: { n: prefs.length, avgCoins, minGroup: MIN_GROUP },
+      priorities: {
+        n: prefs.length, avgCoins, minGroup: MIN_GROUP,
+        // «¿Qué te importa más?»: cuántas familias eligieron cada tarjeta (solo con ≥ 3 familias)
+        focusCounts: prefs.length >= MIN_GROUP ? count(prefs.flatMap((p) => p.focus)) : null,
+      },
       resources: prefs.length >= MIN_GROUP ? {
         traction: count(prefs.map((p) => p.constraints.traction)),
         market: count(prefs.map((p) => p.constraints.market)),

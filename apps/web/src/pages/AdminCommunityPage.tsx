@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { RunResult } from '@qullqa/engine';
-import { INDICATORS, cropName, type LonLat } from '@qullqa/shared';
+import { FOCUS_CARDS, INDICATORS, cropName, type LonLat } from '@qullqa/shared';
 import { api } from '../api.ts';
 import { useApi } from '../lib/hooks.ts';
 import { useSession } from '../lib/session.tsx';
@@ -23,7 +23,7 @@ interface Detail {
   submitted: number;
   demoMembers: { userId: string; name: string; family: number }[];
   parcels: { id: string; family: number; ring: LonLat[]; areaHa: number; altitudeM: number | null; irrigation: string; rotation: string[] }[];
-  priorities: { n: number; avgCoins: Record<string, number> | null; minGroup: number };
+  priorities: { n: number; avgCoins: Record<string, number> | null; minGroup: number; focusCounts: Record<string, number> | null };
   resources: { traction: Record<string, number>; market: Record<string, number>; livestock: number; workers: number } | null;
   observations: {
     byType: Record<string, number>;
@@ -301,6 +301,13 @@ export function AdminCommunityPage() {
       {data.confidence && <ConfidenceCard c={data.confidence} />}
 
       <Card title="Qué le importa a la comunidad">
+        {data.priorities.focusCounts && (
+          <>
+            <h3 style={{ marginTop: 0 }}>Lo que eligieron («¿Qué te importa más?»)</h3>
+            <BarList rows={FOCUS_CARDS.map((f) => ({ label: `${f.icon} ${f.label}`, value: data.priorities.focusCounts![f.id] ?? 0 }))} unit="familias" color="var(--brick)" />
+            <h3>Cómo se traduce para el cálculo</h3>
+          </>
+        )}
         {data.priorities.avgCoins ? (
           <BarList rows={INDICATORS.map((i) => ({ label: i.label, value: data.priorities.avgCoins![i.id] ?? 0, hint: i.hint }))} unit="monedas" digits={1} />
         ) : <p className="small muted">Se muestra cuando al menos {data.priorities.minGroup} familias guardaron sus prioridades (hoy: {data.priorities.n}), para que nadie pueda ser identificado.</p>}
