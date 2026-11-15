@@ -1,4 +1,4 @@
-import { randomBytes, scrypt as _scrypt, timingSafeEqual, randomInt } from 'node:crypto';
+import { randomBytes, scrypt as _scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const scrypt = promisify(_scrypt) as (pw: string, salt: Buffer, len: number) => Promise<Buffer>;
@@ -32,9 +32,4 @@ export function recordFailure(phone: string) {
 }
 export function clearFailures(phone: string) {
   failures.delete(phone);
-}
-
-const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // sin 0/O/1/I
-export function joinCode(): string {
-  return Array.from({ length: 6 }, () => ALPHABET[randomInt(ALPHABET.length)]).join('');
 }

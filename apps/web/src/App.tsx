@@ -4,7 +4,8 @@ import { SessionProvider, useSession } from './lib/session.tsx';
 import { Loading, Page } from './components/ui.tsx';
 import { AuthPage } from './pages/AuthPage.tsx';
 import { HomePage } from './pages/HomePage.tsx';
-import { JoinLinkPage } from './pages/JoinLinkPage.tsx';
+import { CommunitiesPage } from './pages/CommunitiesPage.tsx';
+import { CommunityLandingPage } from './pages/CommunityLandingPage.tsx';
 import { CommunityPage } from './pages/CommunityPage.tsx';
 import { ParcelNewPage } from './pages/ParcelNewPage.tsx';
 import { ParcelDetailPage } from './pages/ParcelDetailPage.tsx';
@@ -25,7 +26,9 @@ export function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/ingresar" element={<AuthPage />} />
-          <Route path="/unirse/:code" element={<JoinLinkPage />} />
+          <Route path="/comunidad/:slug" element={<CommunityLandingPage />} />
+          <Route path="/unirse/*" element={<Navigate to="/comunidades" replace />} />
+          <Route path="/comunidades" element={<Private><CommunitiesPage /></Private>} />
           <Route path="/" element={<Private><HomePage /></Private>} />
           <Route path="/c/:cid" element={<Private><CommunityPage /></Private>} />
           <Route path="/c/:cid/prioridades" element={<Private><PrioritiesPage /></Private>} />

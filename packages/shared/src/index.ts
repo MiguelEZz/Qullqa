@@ -58,7 +58,7 @@ export const Me = z.object({
     z.object({
       id: z.string().uuid(),
       name: z.string(),
-      role: z.enum(['member', 'coordinator']),
+      slug: z.string().nullable(),
     }),
   ),
 });
@@ -74,24 +74,34 @@ export const Ring = z.array(LonLat).min(3, 'Se necesitan al menos 3 puntos').max
 export type Ring = z.infer<typeof Ring>;
 
 // ───────────────────────── Comunidad ─────────────────────────
-export const CreateCommunityBody = z.object({
-  name: z.string().trim().min(3).max(80),
-  /** Centro aproximado; por defecto, el piloto Chivay–Yanque–Coporaque. */
-  center: LonLat.optional(),
+/**
+ * Las comunidades ya están guardadas (pueblos y distritos de la sierra de Arequipa). Nadie las crea:
+ * cada agricultor busca la suya y se une; la comunidad la forman quienes marcan sus parcelas en ella.
+ */
+export const CommunitySummary = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  name: z.string(),
+  district: z.string(),
+  province: z.string(),
+  region: z.string(),
+  altitudeM: z.number().int().nullable(),
+  memberCount: z.number().int(),
+  /** Hay datos NASA del valle procesados para calcular el plan aquí. */
+  hasValleyData: z.boolean(),
+  isMember: z.boolean(),
 });
-export type CreateCommunityBody = z.infer<typeof CreateCommunityBody>;
-
-export const JoinBody = z.object({
-  code: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{6}$/, 'El código tiene 6 caracteres'),
-});
+export type CommunitySummary = z.infer<typeof CommunitySummary>;
 
 /** Vista pública de la comunidad: solo agregados y geometrías; nunca preferencias de nadie. */
 export const CommunityView = z.object({
   id: z.string().uuid(),
+  slug: z.string().nullable(),
   name: z.string(),
-  joinCode: z.string(),
+  district: z.string().nullable(),
+  province: z.string().nullable(),
+  hasValleyData: z.boolean(),
   center: LonLat,
-  myRole: z.enum(['member', 'coordinator']),
   memberCount: z.number().int(),
   submittedCount: z.number().int(),
   parcels: z.array(

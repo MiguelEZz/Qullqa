@@ -1,7 +1,9 @@
 import { buildApp } from './app.ts';
 import { migrate } from './db.ts';
+import { seedCommunities } from './communityCatalog.ts';
 
 const applied = await migrate();
+await seedCommunities();
 const app = await buildApp();
 if (applied.length) app.log.info({ applied }, 'migraciones aplicadas');
 

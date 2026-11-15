@@ -11,10 +11,11 @@ import { buildEngineInput } from '../src/engineInput.ts';
 const [id, flag] = process.argv.slice(2);
 if (!id) {
   const rows = await sql`
-    select c.id, c.name, c.join_code,
+    select c.id, c.name, c.slug,
       (select count(*)::int from memberships m where m.community_id = c.id) as miembros,
       (select count(*)::int from memberships m where m.community_id = c.id and m.submitted_at is not null) as enviados
-    from communities c order by c.created_at`;
+    from communities c
+    where exists(select 1 from memberships m where m.community_id = c.id) order by c.name`;
   console.table(rows);
 } else {
   const input = await buildEngineInput(id, { includeUnsubmitted: flag === '--all' });

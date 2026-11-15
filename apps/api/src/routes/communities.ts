@@ -1,11 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { CreateCommunityBody, JoinBody, type CommunityView, type LonLat, type Readiness } from '@qullqa/shared';
+import type { CommunitySummary, CommunityView, LonLat, Readiness } from '@qullqa/shared';
 import { sql } from '../db.ts';
-import { HttpError, parse, requireMember, requireUser, uuidParam } from '../http.ts';
-import { joinCode } from '../security.ts';
+import { HttpError, requireMember, requireUser, uuidParam } from '../http.ts';
 
-/** Piloto: corredor agrícola Chivay–Yanque–Coporaque (valle del Colca). */
-export const DEFAULT_CENTER: LonLat = [-71.635, -15.64];
+/** Minúsculas y sin tildes, para buscar «Cabanaconde» escribiendo «cabana». */
+const normalize = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
 export async function readinessFor(userId: string, communityId: string): Promise<Readiness> {
   const [r] = await sql<{ parcels: number; prefs: number; submitted_at: Date | null }[]>`
@@ -29,41 +28,71 @@ export async function readinessFor(userId: string, communityId: string): Promise
 }
 
 export async function communityRoutes(app: FastifyInstance) {
-  app.post('/api/communities', async (req) => {
-    const s = await requireUser(req);
-    const body = parse(CreateCommunityBody, req.body);
-    const [lon, lat] = body.center ?? DEFAULT_CENTER;
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const code = joinCode();
-      const [c] = await sql<{ id: string }[]>`
-        insert into communities (name, join_code, center, created_by)
-        values (${body.name}, ${code}, ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)::geography, ${s.sub})
-        on conflict (join_code) do nothing returning id`;
-      if (c) {
-        await sql`insert into memberships (user_id, community_id, role) values (${s.sub}, ${c.id}, 'coordinator')`;
-        return { id: c.id, joinCode: code };
-      }
-    }
-    throw new HttpError(500, 'No se pudo generar un código de comunidad');
+  /**
+   * Buscador de comunidades (catálogo fijo). Público: solo nombre, ubicación y cuántos se unieron.
+   * La búsqueda ignora tildes y mayúsculas («cabana» encuentra «Cabanaconde»).
+   */
+  app.get<{ Querystring: { q?: string } }>('/api/communities', async (req): Promise<CommunitySummary[]> => {
+    let userId: string | null = null;
+    try { userId = (await req.jwtVerify<{ sub: string }>()).sub; } catch { /* sin sesión: igual se puede buscar */ }
+    const rows = await sql<{ id: string; slug: string; name: string; district: string; province: string; region: string; altitude_m: number | null; members: number; valley_id: string | null; is_member: boolean }[]>`
+      select c.id, c.slug, c.name, c.district, c.province, c.region, c.altitude_m, c.valley_id,
+        (select count(*)::int from memberships m where m.community_id = c.id) as members,
+        exists(select 1 from memberships m where m.community_id = c.id and m.user_id = ${userId}) as is_member
+      from communities c where c.listed order by c.name`;
+    const q = normalize(String(req.query.q ?? ''));
+    return rows
+      .filter((r) => !q || [r.name, r.district, r.province].some((t) => normalize(t).includes(q)))
+      .sort((a, b) => (q ? Number(!normalize(a.name).startsWith(q)) - Number(!normalize(b.name).startsWith(q)) : 0) || b.members - a.members || a.name.localeCompare(b.name, 'es'))
+      .map((r) => ({
+        id: r.id, slug: r.slug, name: r.name, district: r.district, province: r.province, region: r.region,
+        altitudeM: r.altitude_m, memberCount: r.members, hasValleyData: !!r.valley_id, isMember: r.is_member,
+      }));
   });
 
-  app.post('/api/communities/join', async (req) => {
+  app.get<{ Params: { slug: string } }>('/api/communities/by-slug/:slug', async (req): Promise<CommunitySummary> => {
+    let userId: string | null = null;
+    try { userId = (await req.jwtVerify<{ sub: string }>()).sub; } catch { /* público */ }
+    const [r] = await sql<{ id: string; slug: string; name: string; district: string; province: string; region: string; altitude_m: number | null; members: number; valley_id: string | null; is_member: boolean }[]>`
+      select c.id, c.slug, c.name, c.district, c.province, c.region, c.altitude_m, c.valley_id,
+        (select count(*)::int from memberships m where m.community_id = c.id) as members,
+        exists(select 1 from memberships m where m.community_id = c.id and m.user_id = ${userId}) as is_member
+      from communities c where c.listed and c.slug = ${req.params.slug}`;
+    if (!r) throw new HttpError(404, 'No encontramos esa comunidad');
+    return { id: r.id, slug: r.slug, name: r.name, district: r.district, province: r.province, region: r.region,
+      altitudeM: r.altitude_m, memberCount: r.members, hasValleyData: !!r.valley_id, isMember: r.is_member };
+  });
+
+  /** Unirse: cualquier agricultor puede sumarse a una comunidad del catálogo. No hay líder ni código. */
+  app.post<{ Params: { id: string } }>('/api/communities/:id/join', async (req) => {
     const s = await requireUser(req);
-    const { code } = parse(JoinBody, req.body);
-    const [c] = await sql<{ id: string; name: string }[]>`select id, name from communities where join_code = ${code}`;
-    if (!c) throw new HttpError(404, 'No existe una comunidad con ese código');
-    await sql`insert into memberships (user_id, community_id, role) values (${s.sub}, ${c.id}, 'member')
-              on conflict do nothing`;
+    const id = uuidParam(req.params.id);
+    const [c] = await sql<{ id: string; name: string }[]>`select id, name from communities where id = ${id} and listed`;
+    if (!c) throw new HttpError(404, 'No encontramos esa comunidad');
+    await sql`insert into memberships (user_id, community_id) values (${s.sub}, ${c.id}) on conflict do nothing`;
     return { id: c.id, name: c.name };
+  });
+
+  /** Salir: borra mis parcelas, observaciones y prioridades en esa comunidad (son mías, no de la comunidad). */
+  app.post<{ Params: { id: string } }>('/api/communities/:id/leave', async (req) => {
+    const s = await requireUser(req);
+    const id = uuidParam(req.params.id);
+    await requireMember(s.sub, id);
+    await sql.begin(async (tx) => {
+      await tx`delete from parcels where owner_id = ${s.sub} and community_id = ${id}`;
+      await tx`delete from preferences where user_id = ${s.sub} and community_id = ${id}`;
+      await tx`delete from memberships where user_id = ${s.sub} and community_id = ${id}`;
+    });
+    return { ok: true };
   });
 
   /** Vista pública para miembros: agregados + geometrías. Nunca preferencias ni observaciones ajenas. */
   app.get<{ Params: { id: string } }>('/api/communities/:id', async (req): Promise<CommunityView> => {
     const s = await requireUser(req);
     const id = uuidParam(req.params.id);
-    const myRole = await requireMember(s.sub, id);
-    const [c] = await sql<{ id: string; name: string; join_code: string; lon: number; lat: number; members: number; submitted: number }[]>`
-      select c.id, c.name, c.join_code,
+    await requireMember(s.sub, id);
+    const [c] = await sql<{ id: string; slug: string | null; name: string; district: string | null; province: string | null; valley_id: string | null; lon: number; lat: number; members: number; submitted: number }[]>`
+      select c.id, c.slug, c.name, c.district, c.province, c.valley_id,
         ST_X(c.center::geometry) as lon, ST_Y(c.center::geometry) as lat,
         (select count(*)::int from memberships where community_id = c.id) as members,
         (select count(*)::int from memberships where community_id = c.id and submitted_at is not null) as submitted
@@ -74,10 +103,12 @@ export async function communityRoutes(app: FastifyInstance) {
       from parcels where community_id = ${id} order by created_at`;
     return {
       id: c.id,
+      slug: c.slug,
       name: c.name,
-      joinCode: c.join_code,
+      district: c.district,
+      province: c.province,
+      hasValleyData: !!c.valley_id,
       center: [c.lon, c.lat],
-      myRole,
       memberCount: c.members,
       submittedCount: c.submitted,
       parcels: parcels.map((p) => ({

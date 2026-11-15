@@ -34,7 +34,7 @@ export async function requireUser(req: FastifyRequest): Promise<Session> {
 }
 
 export async function requireMember(userId: string, communityId: string) {
-  const [m] = await sql<{ role: 'member' | 'coordinator' }[]>`
+  const [m] = await sql<{ role: string }[]>`
     select role from memberships where user_id = ${userId} and community_id = ${communityId}`;
   if (!m) throw new HttpError(403, 'No perteneces a esta comunidad');
   return m.role;

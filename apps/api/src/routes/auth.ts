@@ -54,7 +54,7 @@ export async function authRoutes(app: FastifyInstance) {
     const [user] = await sql<{ id: string; name: string }[]>`select id, name from users where id = ${s.sub}`;
     if (!user) throw new HttpError(401, 'Inicia sesión');
     const communities = await sql<Me['communities']>`
-      select c.id, c.name, m.role from memberships m join communities c on c.id = m.community_id
+      select c.id, c.name, c.slug from memberships m join communities c on c.id = m.community_id
       where m.user_id = ${s.sub} order by m.joined_at`;
     return { id: user.id, name: user.name, communities: [...communities] };
   });

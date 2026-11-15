@@ -11,7 +11,7 @@ import { buildEngineInput } from '../src/engineInput.ts';
 let app: FastifyInstance;
 const phones: string[] = [];
 let communityId = '';
-let joinCode = '';
+const slug = `test-${Date.now()}`;
 
 // Dos parcelas vecinas en el corredor Chivay–Yanque (≈ 30 m × 30 m cada una)
 const ringA: [number, number][] = [[-71.6352, -15.6402], [-71.6349, -15.6402], [-71.6349, -15.6399], [-71.6352, -15.6399]];
@@ -43,11 +43,16 @@ beforeAll(async () => {
   bruno = await register('Test Bruno');
   carla = await register('Test Carla');
 
-  const c = await app.inject({ method: 'POST', url: '/api/communities', headers: alice.headers, payload: { name: 'Test Yanque' } });
-  communityId = c.json().id;
-  joinCode = c.json().joinCode;
-  const j = await app.inject({ method: 'POST', url: '/api/communities/join', headers: bruno.headers, payload: { code: joinCode } });
-  expect(j.statusCode).toBe(200);
+  // Comunidad de prueba del catálogo (las reales se siembran con seedCommunities)
+  const [c] = await sql<{ id: string }[]>`
+    insert into communities (slug, name, district, province, region, listed, center)
+    values (${slug}, 'Test Yanque', 'Yanque', 'Caylloma', 'Arequipa', true, ST_SetSRID(ST_MakePoint(-71.635, -15.64), 4326)::geography)
+    returning id`;
+  communityId = c!.id;
+  for (const u of [alice, bruno]) {
+    const j = await app.inject({ method: 'POST', url: `/api/communities/${communityId}/join`, headers: u.headers });
+    expect(j.statusCode).toBe(200);
+  }
 
   const base = { communityId, captureMethod: 'draw', irrigation, currentRotation: ['papa', 'haba', 'cebada'] };
   const pa = await app.inject({ method: 'POST', url: '/api/parcels', headers: alice.headers, payload: { ...base, name: 'Chacra de Alice', ring: ringA } });
@@ -121,6 +126,36 @@ describe('privacidad entre agricultores', () => {
   it('sin sesión todo responde 401', async () => {
     const r = await app.inject({ method: 'GET', url: `/api/communities/${communityId}` });
     expect(r.statusCode).toBe(401);
+  });
+});
+
+describe('comunidades del catálogo', () => {
+  it('se buscan sin sesión, sin tildes, y no exponen a sus miembros', async () => {
+    const r = await app.inject({ method: 'GET', url: `/api/communities?q=${encodeURIComponent('test yanque')}` });
+    expect(r.statusCode).toBe(200);
+    const hit = r.json().find((c: { slug: string }) => c.slug === slug);
+    expect(hit.memberCount).toBe(2);
+    expect(hit.isMember).toBe(false);
+    for (const leak of ['Test Alice', 'Test Bruno', ...phones]) expect(r.body).not.toContain(leak);
+    const mine = await app.inject({ method: 'GET', url: `/api/communities/by-slug/${slug}`, headers: alice.headers });
+    expect(mine.json().isMember).toBe(true);
+  });
+
+  it('ya no se pueden crear comunidades', async () => {
+    const r = await app.inject({ method: 'POST', url: '/api/communities', headers: carla.headers, payload: { name: 'Mi comunidad' } });
+    expect(r.statusCode).toBe(404);
+  });
+
+  it('salir de la comunidad borra mis parcelas y prioridades ahí', async () => {
+    const j = await app.inject({ method: 'POST', url: `/api/communities/${communityId}/join`, headers: carla.headers });
+    expect(j.statusCode).toBe(200);
+    await app.inject({ method: 'PUT', url: `/api/communities/${communityId}/preferences`, headers: carla.headers, payload: { coins, constraints, vetoes: [] } });
+    const l = await app.inject({ method: 'POST', url: `/api/communities/${communityId}/leave`, headers: carla.headers });
+    expect(l.statusCode).toBe(200);
+    const [p] = await sql<{ n: number }[]>`select count(*)::int as n from preferences where user_id = ${carla.id}`;
+    expect(p!.n).toBe(0);
+    const v = await app.inject({ method: 'GET', url: `/api/communities/${communityId}`, headers: carla.headers });
+    expect(v.statusCode).toBe(403);
   });
 });
 
