@@ -5,3 +5,7 @@
 apps/api/out
 infra/data
 *.pdf
+*.swp
+.*.swp
+*.swo
+*.pem
