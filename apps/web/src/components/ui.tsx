@@ -42,6 +42,7 @@ export function Page({
     <div className={`app ${me ? 'with-nav' : ''}`}>
       {variant === 'hero' ? (
         <header className="hero big">
+          <span className="hero-deco" aria-hidden />
           {topRow}
           <Link to="/" className="badge-logo" aria-label="Qullqa, ir al inicio">
             <img src="/hongo.png" alt="" width={64} height={62} />
@@ -49,6 +50,7 @@ export function Page({
         </header>
       ) : (
         <header className="hero">
+          <span className="hero-deco" aria-hidden />
           {topRow}
           {!hideTitle && (
             <div className="hero-title">

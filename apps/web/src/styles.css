@@ -37,11 +37,13 @@ h1, h2, h3 { line-height: 1.2; }
 main { position: relative; max-width: 600px; margin: 0 auto; padding: 0 16px 28px; }
 
 /* ── Banda ladrillo (cabecera) ────────────────────────── */
-.hero { position: relative; overflow: hidden; background: var(--brick); color: #fff;
+.hero { position: relative; background: var(--brick); color: #fff;
   padding: calc(10px + env(safe-area-inset-top)) 16px 22px; border-radius: 0 0 28px 28px; }
-.hero::before { content: ''; position: absolute; left: -60px; bottom: -70px; width: 190px; height: 170px; border-radius: 48% 52% 44% 56%; background: var(--brick-deep); }
-.hero::after { content: ''; position: absolute; right: -50px; top: -60px; width: 170px; height: 170px; border-radius: 50%; background: var(--peach); opacity: .95; }
-.hero > * { position: relative; z-index: 1; max-width: 600px; margin-left: auto; margin-right: auto; }
+/* Formas decorativas en su propia capa recortada: así el círculo del hongo puede sobresalir de la banda */
+.hero-deco { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.hero-deco::before { content: ''; position: absolute; left: -60px; bottom: -70px; width: 190px; height: 170px; border-radius: 48% 52% 44% 56%; background: var(--brick-deep); }
+.hero-deco::after { content: ''; position: absolute; right: -50px; top: -60px; width: 170px; height: 170px; border-radius: 50%; background: var(--peach); opacity: .95; }
+.hero > :not(.hero-deco) { position: relative; z-index: 1; max-width: 600px; margin-left: auto; margin-right: auto; }
 .hero-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; }
 .hero-actions { display: flex; align-items: center; gap: 8px; }
 .back { display: inline-flex; width: auto; min-height: 44px; margin: 0; padding: 0 14px 0 10px; gap: 6px; border-radius: 999px;
@@ -86,7 +88,7 @@ button.secondary, .btn.secondary { background: #fff; color: var(--brick); border
 button.secondary:hover:not(:disabled), .btn.secondary:hover { background: var(--brick-soft); }
 button.danger { background: #fff; color: var(--bad); border: 2px solid var(--bad); box-shadow: none; }
 button.danger:hover:not(:disabled) { background: var(--bad-soft); }
-button.link { width: auto; min-height: 0; margin: 0; padding: 6px 2px; background: none; color: var(--brick); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; box-shadow: none; letter-spacing: 0; }
+button.link { display: inline-flex; width: auto; min-height: 0; margin: 0; padding: 6px 2px; background: none; color: var(--brick); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; box-shadow: none; letter-spacing: 0; }
 button.link:hover:not(:disabled) { background: none; color: var(--brick-dark); }
 button.icon { width: 48px; min-height: 48px; margin: 0; padding: 0; background: transparent; color: var(--fg); font-size: 1.4rem; border-radius: 50%; box-shadow: none; }
 .btn.file { cursor: pointer; }

@@ -47,24 +47,24 @@ export function RecoverPage() {
   }
 
   return (
-    <Page title="Recuperar mi PIN" back="/ingresar?modo=ingresar">
+    <Page title="Recuperar mi PIN" back="/ingresar?modo=ingresar" variant="hero" kicker="¿Olvidaste tu PIN?">
       <p className="lead">Usa el código de recuperación que te mostramos al crear tu cuenta (8 letras y números, como ABCD-EF23).</p>
       <Card>
         <form onSubmit={submit}>
-          <Field label="Número de celular">
+          <Field label="Número de celular" icon="phone">
             <input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" autoComplete="tel" required />
           </Field>
-          <Field label="Código de recuperación">
-            <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 9))} className="code" autoCapitalize="characters" autoComplete="one-time-code" required />
+          <Field label="Código de recuperación" icon="key">
+            <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 9))} className="code" placeholder="ABCD-EF23" autoCapitalize="characters" autoComplete="one-time-code" required />
           </Field>
-          <Field label="PIN nuevo (4 números)">
+          <Field label="PIN nuevo (4 números)" icon="lock">
             <input value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))} inputMode="numeric" type="password" autoComplete="new-password" pattern="\d{4}" required />
           </Field>
-          <Field label="Repite el PIN nuevo">
+          <Field label="Repite el PIN nuevo" icon="lock">
             <input value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, '').slice(0, 4))} inputMode="numeric" type="password" autoComplete="new-password" pattern="\d{4}" required />
           </Field>
           <ErrorMsg error={error} />
-          <button type="submit" disabled={busy}>{busy ? 'Comprobando…' : 'Cambiar mi PIN'}</button>
+          <button type="submit" disabled={busy}>{busy ? 'Comprobando…' : 'CAMBIAR MI PIN'}</button>
         </form>
       </Card>
       <Card title="¿Perdiste también tu código?">
