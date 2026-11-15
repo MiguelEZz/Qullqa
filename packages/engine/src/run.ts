@@ -133,7 +133,7 @@ export function runCommunity(snap: RunSnapshot): RunResult {
     for (const c of Object.values(m.crops)) apt.set(c.id, assessAptitude(m, c));
     aptByParcel.set(m.id, apt);
     const allowed = [FALLOW.id, ...[...apt.values()].filter((r) => r.aptitude !== 'notApt' && !pl.vetoes.includes(r.crop as never)).map((r) => r.crop)];
-    candidates.set(m.id, enumerateRotations(allowed));
+    candidates.set(m.id, enumerateRotations(allowed, { ...a.rotation, fallowId: FALLOW.id }, m.currentRotation[2]));
   }
 
   const c = buildCommunity(players, candidates, a, whatIf.outbreakParcelId);

@@ -8,7 +8,8 @@
     "start": "tsx --env-file=../../.env src/server.ts",
     "typecheck": "tsc -p .",
     "test": "vitest run",
-    "export:input": "tsx --env-file=../../.env scripts/export-input.ts"
+    "export:input": "tsx --env-file=../../.env scripts/export-input.ts",
+    "seed:demo": "tsx --env-file=../../.env scripts/seed-demo.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.5",

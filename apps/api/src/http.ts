@@ -23,7 +23,20 @@ export function parse<T extends z.ZodTypeAny>(schema: T, data: unknown): z.infer
   return r.data;
 }
 
-export type Session = { sub: string; name: string };
+/** actAs: id del administrador que está «viendo como» una familia demo. */
+export type Session = { sub: string; name: string; actAs?: string };
+
+/** Celulares con acceso al panel (ADMIN_PHONES, separados por coma). Se comparan los últimos 9 dígitos. */
+const adminPhones = () => (process.env.ADMIN_PHONES ?? '').split(',').map((p) => p.replace(/\D/g, '').slice(-9)).filter((p) => p.length === 9);
+export const isAdminPhone = (phone: string) => adminPhones().includes(phone.replace(/\D/g, '').slice(-9));
+
+export async function requireAdmin(req: FastifyRequest): Promise<Session> {
+  const s = await requireUser(req);
+  if (s.actAs) throw new HttpError(403, 'Vuelve a tu cuenta de administrador para ver el panel');
+  const [u] = await sql<{ phone: string }[]>`select phone from users where id = ${s.sub}`;
+  if (!u || !isAdminPhone(u.phone)) throw new HttpError(404, 'No encontrado');
+  return s;
+}
 
 export async function requireUser(req: FastifyRequest): Promise<Session> {
   try {

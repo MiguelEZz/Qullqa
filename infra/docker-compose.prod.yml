@@ -26,6 +26,7 @@ services:
       PC_SDK_SUBSCRIPTION_KEY: ${PC_SDK_SUBSCRIPTION_KEY:-}
       METEOMATICS_USERNAME: ${METEOMATICS_USERNAME:-}
       METEOMATICS_PASSWORD: ${METEOMATICS_PASSWORD:-}
+      ADMIN_PHONES: ${ADMIN_PHONES:-}
     depends_on:
       db: { condition: service_healthy }
 
@@ -37,6 +38,21 @@ services:
     depends_on:
       db: { condition: service_healthy }
       api: { condition: service_started } # la API aplica las migraciones
+
+  # Respaldo diario de la base en la VM (/var/backups/qullqa); se conservan los de los últimos 30 días.
+  backup:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    volumes:
+      - /var/backups/qullqa:/backups
+    entrypoint: ["sh", "-c", "while true; do pg_dump -Fc -f /backups/qullqa-$$(date +%Y%m%d-%H%M).dump && echo respaldo-ok; find /backups -name 'qullqa-*.dump' -mtime +30 -delete; sleep 86400; done"]
+    depends_on:
+      db: { condition: service_healthy }
 
   web:
     build: { context: .., target: web }

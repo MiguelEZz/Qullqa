@@ -45,6 +45,13 @@ export interface Assumptions {
     phMin: number;
     phMax: number;
   };
+  /** Reglas de rotación (práctica agronómica andina; supuesto editable): filtran las rotaciones candidatas. */
+  rotation: {
+    /** Campañas de descanso permitidas en las 3 planificadas. */
+    maxFallowSeasons: number;
+    /** Máximo de campañas seguidas con el mismo cultivo (contando la campaña en curso). */
+    maxSameCropInRow: number;
+  };
   sowing: {
     /** Lluvia acumulada en los últimos 10 días (mm) que abre la siembra en secano. */
     onsetRain10d_mm: number;
@@ -165,6 +172,7 @@ export const ASSUMPTIONS: Assumptions = {
   soil: { runoffThreshold_mm: 20, runoffFraction: 0.3, bareSoilKc: 0.3, profileDepth_m: 1.5 },
   // Spec §6: umbrales 15 % y 40 %
   aptitude: { frostMarginal: 0.15, frostNotApt: 0.4, gddMarginal: 0.15, gddNotApt: 0.4, waterChronicNotApt: 0.6, waterMarginal: 0.3, altMarginMarginal_m: 200, phMin: 4.5, phMax: 8.5 },
+  rotation: { maxFallowSeasons: 1, maxSameCropInRow: 2 },
   sowing: { onsetRain10d_mm: 20, onsetFollow20d_mm: 10, minTmin_C: -2 },
   damage: { frostPerEvent: 0.15, heatPerEvent: 0.05, maxDamage: 0.95 },
   // Caudal de un turno: SUPUESTO (preguntar al comité de regantes / en la app). Eficiencia de riego por gravedad en andenes.

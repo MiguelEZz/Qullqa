@@ -3,13 +3,13 @@ import {
   ChangePinBody, ConfirmPinBody, LoginBody, RegisterBody, ResetPinBody, TERMS_VERSION, UpdateMeBody, type AuthResult, type Me,
 } from '@qullqa/shared';
 import { sql } from '../db.ts';
-import { HttpError, SESSION_COOKIE, parse, requireUser } from '../http.ts';
+import { HttpError, SESSION_COOKIE, isAdminPhone, parse, requireUser } from '../http.ts';
 import { clearFailures, hashPin, isLocked, recordFailure, recoveryCode, verifyPin } from '../security.ts';
 
 const NINETY_DAYS = 90 * 24 * 3600;
 
-async function startSession(reply: FastifyReply, user: { id: string; name: string }) {
-  const token = await reply.jwtSign({ sub: user.id, name: user.name }, { expiresIn: NINETY_DAYS });
+export async function startSession(reply: FastifyReply, user: { id: string; name: string }, actAs?: string) {
+  const token = await reply.jwtSign({ sub: user.id, name: user.name, ...(actAs ? { actAs } : {}) }, { expiresIn: actAs ? 12 * 3600 : NINETY_DAYS });
   reply.setCookie(SESSION_COOKIE, token, {
     path: '/',
     httpOnly: true,
@@ -95,7 +95,28 @@ export async function authRoutes(app: FastifyInstance) {
     const communities = await sql<Me['communities']>`
       select c.id, c.name, c.slug from memberships m join communities c on c.id = m.community_id
       where m.user_id = ${s.sub} order by m.joined_at`;
-    return { id: user.id, name: user.name, phoneHint: user.phone.slice(-3), createdAt: user.created_at.toISOString(), communities: [...communities] };
+    let actingFor: Me['actingFor'] = null;
+    if (s.actAs) {
+      const [admin] = await sql<{ name: string }[]>`select name from users where id = ${s.actAs}`;
+      actingFor = admin ? { adminName: admin.name } : null;
+    }
+    return {
+      id: user.id, name: user.name, phoneHint: user.phone.slice(-3), createdAt: user.created_at.toISOString(), communities: [...communities],
+      isAdmin: !s.actAs && isAdminPhone(user.phone), actingFor,
+    };
+  });
+
+  /** Termina el «ver como» y vuelve a la sesión del administrador. */
+  app.post('/api/auth/stop-acting', async (req, reply) => {
+    const s = await requireUser(req);
+    if (!s.actAs) throw new HttpError(400, 'No estás viendo como otra persona');
+    const [admin] = await sql<{ id: string; name: string; phone: string }[]>`select id, name, phone from users where id = ${s.actAs}`;
+    if (!admin || !isAdminPhone(admin.phone)) {
+      reply.clearCookie(SESSION_COOKIE, { path: '/' });
+      throw new HttpError(401, 'Inicia sesión');
+    }
+    await startSession(reply, admin);
+    return { ok: true };
   });
 
   app.patch('/api/me', async (req, reply) => {

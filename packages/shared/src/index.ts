@@ -78,6 +78,10 @@ export const Me = z.object({
   /** Últimos 3 dígitos del celular (para «Mi cuenta»), nunca el número completo en pantalla ajena. */
   phoneHint: z.string(),
   createdAt: z.string(),
+  /** Acceso al panel de administración (ADMIN_PHONES). */
+  isAdmin: z.boolean(),
+  /** Un administrador está «viendo como» esta cuenta demo. */
+  actingFor: z.object({ adminName: z.string() }).nullable(),
   communities: z.array(
     z.object({
       id: z.string().uuid(),

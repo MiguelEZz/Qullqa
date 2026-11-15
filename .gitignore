@@ -9,3 +9,6 @@ apps/api/out/
 *.swp
 .*.swp
 *.swo
+
+# Respaldos de la base descargados con ./infra/azure.sh backup
+backups/

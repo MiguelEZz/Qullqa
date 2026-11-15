@@ -1,0 +1,185 @@
+{
+ "source": "ESA WorldCover 2021 v200 (no NASA) vía Planetary Computer + NASA SRTM 30 m vía OpenTopoData",
+ "points": [
+  {
+   "lonLat": [
+    -71.66,
+    -15.655
+   ],
+   "elevationM": 3430,
+   "slopeDeg": 1.4,
+   "cropFraction": 0.7
+  },
+  {
+   "lonLat": [
+    -71.658,
+    -15.645
+   ],
+   "elevationM": 3434,
+   "slopeDeg": 1.4,
+   "cropFraction": 0.62
+  },
+  {
+   "lonLat": [
+    -71.656,
+    -15.647
+   ],
+   "elevationM": 3434,
+   "slopeDeg": 1,
+   "cropFraction": 0.63
+  },
+  {
+   "lonLat": [
+    -71.656,
+    -15.643
+   ],
+   "elevationM": 3436,
+   "slopeDeg": 4.9,
+   "cropFraction": 0.53
+  },
+  {
+   "lonLat": [
+    -71.654,
+    -15.649
+   ],
+   "elevationM": 3440,
+   "slopeDeg": 3,
+   "cropFraction": 0.56
+  },
+  {
+   "lonLat": [
+    -71.654,
+    -15.643
+   ],
+   "elevationM": 3438,
+   "slopeDeg": 3.4,
+   "cropFraction": 0.92
+  },
+  {
+   "lonLat": [
+    -71.652,
+    -15.645
+   ],
+   "elevationM": 3446,
+   "slopeDeg": 1.4,
+   "cropFraction": 0.79
+  },
+  {
+   "lonLat": [
+    -71.652,
+    -15.629
+   ],
+   "elevationM": 3559,
+   "slopeDeg": 3.8,
+   "cropFraction": 0.62
+  },
+  {
+   "lonLat": [
+    -71.648,
+    -15.631
+   ],
+   "elevationM": 3543,
+   "slopeDeg": 2.1,
+   "cropFraction": 0.84
+  },
+  {
+   "lonLat": [
+    -71.646,
+    -15.643
+   ],
+   "elevationM": 3456,
+   "slopeDeg": 3.9,
+   "cropFraction": 0.65
+  },
+  {
+   "lonLat": [
+    -71.646,
+    -15.633
+   ],
+   "elevationM": 3531,
+   "slopeDeg": 3.9,
+   "cropFraction": 0.52
+  },
+  {
+   "lonLat": [
+    -71.644,
+    -15.641
+   ],
+   "elevationM": 3476,
+   "slopeDeg": 3,
+   "cropFraction": 0.96
+  },
+  {
+   "lonLat": [
+    -71.644,
+    -15.619
+   ],
+   "elevationM": 3762,
+   "slopeDeg": 11.9,
+   "cropFraction": 0.62
+  },
+  {
+   "lonLat": [
+    -71.642,
+    -15.645
+   ],
+   "elevationM": 3459,
+   "slopeDeg": 0,
+   "cropFraction": 1
+  },
+  {
+   "lonLat": [
+    -71.642,
+    -15.641
+   ],
+   "elevationM": 3478,
+   "slopeDeg": 3,
+   "cropFraction": 0.77
+  },
+  {
+   "lonLat": [
+    -71.64,
+    -15.645
+   ],
+   "elevationM": 3459,
+   "slopeDeg": 3.8,
+   "cropFraction": 0.77
+  },
+  {
+   "lonLat": [
+    -71.638,
+    -15.647
+   ],
+   "elevationM": 3468,
+   "slopeDeg": 1.9,
+   "cropFraction": 0.7
+  },
+  {
+   "lonLat": [
+    -71.632,
+    -15.651
+   ],
+   "elevationM": 3487,
+   "slopeDeg": 2.1,
+   "cropFraction": 0.53
+  },
+  {
+   "lonLat": [
+    -71.632,
+    -15.641
+   ],
+   "elevationM": 3522,
+   "slopeDeg": 1,
+   "cropFraction": 0.59
+  },
+  {
+   "lonLat": [
+    -71.626,
+    -15.655
+   ],
+   "elevationM": 3496,
+   "slopeDeg": 10,
+   "cropFraction": 0.52
+  }
+ ]
+}

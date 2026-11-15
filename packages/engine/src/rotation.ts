@@ -115,8 +115,26 @@ export function rotationStats(m: ParcelModel, rot: Rotation, prev0: string): Rot
 }
 
 /** Todas las rotaciones de 3 campañas con los cultivos permitidos. */
-export function enumerateRotations(allowed: string[]): Rotation[] {
+/**
+ * Rotaciones candidatas de 3 campañas. Aplica reglas de rotación (supuesto editable): pocas campañas de descanso
+ * y no repetir el mismo cultivo más de N campañas seguidas, contando la campaña en curso (`prev`).
+ * Sin reglas, el optimizador proponía p. ej. avena 3 años seguidos o 3 años de descanso.
+ */
+export function enumerateRotations(allowed: string[], rules?: { maxFallowSeasons: number; maxSameCropInRow: number; fallowId: string }, prev?: string | null): Rotation[] {
   const out: Rotation[] = [];
-  for (const a of allowed) for (const b of allowed) for (const c of allowed) out.push([a, b, c]);
-  return out;
+  for (const a of allowed) for (const b of allowed) for (const c of allowed) {
+    const r: Rotation = [a, b, c];
+    if (rules) {
+      if (r.filter((x) => x === rules.fallowId).length > rules.maxFallowSeasons) continue;
+      const seq = prev ? [prev, ...r] : r;
+      let run = 1, ok = true;
+      for (let i = 1; i < seq.length && ok; i++) {
+        run = seq[i] === seq[i - 1] && seq[i] !== rules.fallowId ? run + 1 : 1;
+        if (run > rules.maxSameCropInRow) ok = false;
+      }
+      if (!ok) continue;
+    }
+    out.push(r);
+  }
+  return out.length ? out : [[rules?.fallowId ?? allowed[0]!, allowed[0]!, allowed[0]!] as Rotation];
 }

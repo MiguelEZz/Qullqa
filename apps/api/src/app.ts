@@ -9,6 +9,7 @@ import { communityRoutes } from './routes/communities.ts';
 import { parcelRoutes } from './routes/parcels.ts';
 import { preferenceRoutes } from './routes/preferences.ts';
 import { runRoutes } from './routes/runs.ts';
+import { adminRoutes } from './routes/admin.ts';
 
 export async function buildApp(opts: { logger?: boolean } = {}) {
   const secret = process.env.JWT_SECRET;
@@ -58,6 +59,7 @@ export async function buildApp(opts: { logger?: boolean } = {}) {
   await app.register(parcelRoutes);
   await app.register(preferenceRoutes);
   await app.register(runRoutes);
+  await app.register(adminRoutes);
 
   return app;
 }
