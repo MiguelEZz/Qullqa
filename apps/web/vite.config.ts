@@ -19,8 +19,8 @@ export default defineConfig({
         related_applications: [{ platform: 'webapp', url: 'https://qullqa.us/manifest.webmanifest' }],
         prefer_related_applications: false,
         display: 'standalone',
-        background_color: '#f2eee6',
-        theme_color: '#b64a31',
+        background_color: '#faf8f7',
+        theme_color: '#b54423',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },

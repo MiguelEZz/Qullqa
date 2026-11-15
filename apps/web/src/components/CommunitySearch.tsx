@@ -71,7 +71,7 @@ export function CommunitySearch({ autoFocus = false }: { autoFocus?: boolean }) 
   return (
     <div>
       <label className="field">
-        <span>¿De qué comunidad eres?</span>
+        <span className="lbl">¿De qué comunidad eres?</span>
         <input
           type="search"
           value={q}

@@ -1,37 +1,101 @@
 import { useEffect, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { DISCLAIMER } from '@qullqa/shared';
 import { useInstallPrompt } from '../lib/hooks.ts';
 import { useSession } from '../lib/session.tsx';
 import { api } from '../api.ts';
+import { Icon, type IconName } from './Icon.tsx';
 
-export function Page({ title, back, children, actions, hideTitle }: { title: string; back?: string; children: ReactNode; actions?: ReactNode; hideTitle?: boolean }) {
+/**
+ * Página con el estilo FrontIdea:
+ *  - variant «hero»: banda ladrillo grande con el hongo en un círculo blanco y el título centrado (ingreso, portada, inicio).
+ *  - variant «compact» (por defecto): banda ladrillo baja con «Volver» y el título en blanco.
+ * Para personas que usan poco el celular: letras grandes, botones anchos, ícono + palabra, barra fija abajo.
+ */
+export function Page({
+  title, back, children, actions, hideTitle, variant = 'compact', kicker,
+}: { title: string; back?: string; children: ReactNode; actions?: ReactNode; hideTitle?: boolean; variant?: 'hero' | 'compact'; kicker?: string }) {
   const nav = useNavigate();
+  const { me } = useSession();
   const { standalone } = useInstallPrompt();
   useEffect(() => {
     document.title = title === 'Qullqa' ? 'Qullqa — Decidir juntos qué sembrar' : `${title} · Qullqa`;
   }, [title]);
-  return (
-    <main>
-      <header className="bar">
-        {back && (
-          <button className="icon" aria-label="Volver" onClick={() => nav(back)}>
-            ←
-          </button>
+
+  const topRow = (
+    <div className="hero-row">
+      {back ? (
+        <button className="back" onClick={() => nav(back)}>
+          <Icon name="back" size={22} /> Volver
+        </button>
+      ) : <span />}
+      <div className="hero-actions">
+        {actions}
+        {!standalone && (
+          <Link to="/descargar" className="getapp"><Icon name="download" size={18} /> Descargar app</Link>
         )}
-        <Link to="/" className="brand" aria-label="Qullqa, ir al inicio">
-          <img src="/logo-qullqa.png" alt="Qullqa" width={84} height={38} />
-        </Link>
-        <div className="actions">
-          {!standalone && <Link to="/descargar" className="getapp">Descargar app</Link>}
-          {actions}
-        </div>
-      </header>
-      <ActingBanner />
-      {!hideTitle && <h1 className="pagetitle">{title}</h1>}
-      {children}
-      <SiteFooter />
-    </main>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={`app ${me ? 'with-nav' : ''}`}>
+      {variant === 'hero' ? (
+        <header className="hero big">
+          {topRow}
+          <Link to="/" className="badge-logo" aria-label="Qullqa, ir al inicio">
+            <img src="/hongo.png" alt="" width={64} height={62} />
+          </Link>
+        </header>
+      ) : (
+        <header className="hero">
+          {topRow}
+          {!hideTitle && (
+            <div className="hero-title">
+              <Link to="/" className="badge-logo small" aria-label="Qullqa, ir al inicio">
+                <img src="/hongo.png" alt="" width={30} height={29} />
+              </Link>
+              <h1>{title}</h1>
+            </div>
+          )}
+        </header>
+      )}
+      <main>
+        {variant === 'hero' && (
+          <div className="hero-head">
+            <p className="brand-name">Qullqa</p>
+            {kicker && <p className="kicker">{kicker}</p>}
+            {!hideTitle && <h1>{title}</h1>}
+          </div>
+        )}
+        <ActingBanner />
+        {children}
+        <SiteFooter />
+      </main>
+      {me && <BottomNav />}
+    </div>
+  );
+}
+
+/** Barra fija abajo, como en WhatsApp: siempre a un toque de lo importante. */
+function BottomNav() {
+  const { me } = useSession();
+  const first = me?.communities[0];
+  const items: { to: string; icon: IconName; label: string; end?: boolean }[] = [
+    { to: '/', icon: 'home', label: 'Inicio', end: true },
+    { to: first ? `/c/${first.id}/plan` : '/comunidades', icon: 'sprout', label: 'Mi plan' },
+    { to: '/ayuda', icon: 'help', label: 'Ayuda' },
+    { to: '/cuenta', icon: 'account', label: 'Mi cuenta' },
+  ];
+  return (
+    <nav className="bottom-nav" aria-label="Navegación principal">
+      {items.map((i) => (
+        <NavLink key={i.label} to={i.to} end={i.end} className={({ isActive }) => (isActive ? 'on' : '')}>
+          <Icon name={i.icon} size={26} />
+          <span>{i.label}</span>
+        </NavLink>
+      ))}
+    </nav>
   );
 }
 
@@ -53,38 +117,52 @@ export function SiteFooter() {
     <footer className="site">
       <nav aria-label="Información">
         <Link to="/como-funciona">Cómo funciona</Link>
-        <Link to="/terminos">Términos y condiciones</Link>
+        <Link to="/terminos">Términos</Link>
         <Link to="/privacidad">Privacidad</Link>
         <Link to="/ayuda">Ayuda</Link>
-        <Link to="/descargar">Descargar app</Link>
       </nav>
       <p>{DISCLAIMER}</p>
-      <p>© 2026 Qullqa · Datos climáticos y satelitales de NASA y otras fuentes citadas</p>
+      <p>© 2026 Qullqa · Datos de NASA y otras fuentes citadas</p>
     </footer>
   );
 }
 
-export function Card({ title, children, className = '' }: { title?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({ title, children, className = '', icon }: { title?: ReactNode; children: ReactNode; className?: string; icon?: IconName }) {
   return (
     <section className={`card ${className}`}>
-      {title && <h2>{title}</h2>}
+      {title && <h2>{icon && <span className="ico-tile sm"><Icon name={icon} size={20} /></span>}{title}</h2>}
       {children}
     </section>
   );
 }
 
 export function ErrorMsg({ error }: { error: string | null }) {
-  return error ? <p className="error" role="alert">{error}</p> : null;
+  return error ? <p className="error" role="alert"><Icon name="alert" size={20} /> {error}</p> : null;
 }
 
 export function Loading() {
-  return <p className="muted">Cargando…</p>;
+  return <p className="loading"><span className="spinner" aria-hidden /> Cargando…</p>;
 }
 
-export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+/** Campo de formulario. Con `icon`, se ve como en el diseño: cuadrito ladrillo + etiqueta en negrita dentro. */
+export function Field({ label, hint, children, icon }: { label: string; hint?: string; children: ReactNode; icon?: IconName }) {
+  if (icon) {
+    return (
+      <div className="field">
+        <label className="iconed">
+          <span className="ico-tile"><Icon name={icon} size={22} /></span>
+          <span className="stack">
+            <span className="lbl">{label}</span>
+            {children}
+          </span>
+        </label>
+        {hint && <small>{hint}</small>}
+      </div>
+    );
+  }
   return (
     <label className="field">
-      <span>{label}</span>
+      <span className="lbl">{label}</span>
       {children}
       {hint && <small>{hint}</small>}
     </label>
@@ -103,18 +181,22 @@ export function Choice<T extends string | number>({
   return (
     <div className="choices">
       {options.map((o) => (
-        <button type="button" key={String(o.value)} className={`choice ${value === o.value ? 'on' : ''}`} onClick={() => onChange(o.value)}>
-          <strong>{o.label}</strong>
-          {o.hint && <small>{o.hint}</small>}
+        <button type="button" key={String(o.value)} className={`choice ${value === o.value ? 'on' : ''}`} aria-pressed={value === o.value} onClick={() => onChange(o.value)}>
+          <span className="radio" aria-hidden>{value === o.value && <Icon name="check" size={16} />}</span>
+          <span>
+            <strong>{o.label}</strong>
+            {o.hint && <small>{o.hint}</small>}
+          </span>
         </button>
       ))}
     </div>
   );
 }
 
-export function LinkButton({ to, children, variant = 'primary' }: { to: string; children: ReactNode; variant?: 'primary' | 'secondary' }) {
+export function LinkButton({ to, children, variant = 'primary', icon }: { to: string; children: ReactNode; variant?: 'primary' | 'secondary'; icon?: IconName }) {
   return (
     <Link className={`btn ${variant}`} to={to}>
+      {icon && <Icon name={icon} size={22} />}
       {children}
     </Link>
   );
@@ -125,8 +207,8 @@ export function InstallBanner() {
   if (standalone) return null;
   return (
     <div className="install">
-      <img src="/icon-192.png" alt="" width={40} height={40} />
-      <span>Instala Qullqa en tu celular para abrirla como una app.</span>
+      <img src="/icon-192.png" alt="" width={44} height={44} />
+      <span>Instala Qullqa en tu celular y ábrela como una app.</span>
       {canInstall ? <button onClick={() => void install()}>Instalar</button> : <Link className="btn" to="/descargar">Ver cómo</Link>}
     </div>
   );
@@ -135,7 +217,8 @@ export function InstallBanner() {
 export function Check({ ok, children, optional }: { ok: boolean; children: ReactNode; optional?: boolean }) {
   return (
     <li className={ok ? 'done' : optional ? 'optional' : 'todo'}>
-      <span aria-hidden>{ok ? '✓' : optional ? '○' : '•'}</span> {children}
+      <span className="mark" aria-hidden>{ok ? <Icon name="check" size={18} /> : optional ? '○' : '•'}</span>
+      <span>{children}</span>
     </li>
   );
 }
