@@ -1,26 +1,45 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { DISCLAIMER } from '@qullqa/shared';
 import { useInstallPrompt } from '../lib/hooks.ts';
 
-export function Page({ title, back, children, actions }: { title: string; back?: string; children: ReactNode; actions?: ReactNode }) {
+export function Page({ title, back, children, actions, hideTitle }: { title: string; back?: string; children: ReactNode; actions?: ReactNode; hideTitle?: boolean }) {
   const nav = useNavigate();
+  useEffect(() => {
+    document.title = title === 'Qullqa' ? 'Qullqa — Decidir juntos qué sembrar' : `${title} · Qullqa`;
+  }, [title]);
   return (
     <main>
       <header className="bar">
-        {back ? (
+        {back && (
           <button className="icon" aria-label="Volver" onClick={() => nav(back)}>
             ←
           </button>
-        ) : (
-          <span className="logo">Q</span>
         )}
-        <h1>{title}</h1>
-        {actions}
+        <Link to="/" className="brand" aria-label="Qullqa, ir al inicio">
+          <img src="/logo-qullqa.png" alt="Qullqa" width={84} height={38} />
+        </Link>
+        {actions && <div className="actions">{actions}</div>}
       </header>
+      {!hideTitle && <h1 className="pagetitle">{title}</h1>}
       {children}
-      <footer>{DISCLAIMER}</footer>
+      <SiteFooter />
     </main>
+  );
+}
+
+export function SiteFooter() {
+  return (
+    <footer className="site">
+      <nav aria-label="Información">
+        <Link to="/como-funciona">Cómo funciona</Link>
+        <Link to="/terminos">Términos y condiciones</Link>
+        <Link to="/privacidad">Privacidad</Link>
+        <Link to="/ayuda">Ayuda</Link>
+      </nav>
+      <p>{DISCLAIMER}</p>
+      <p>© 2026 Qullqa · Datos climáticos y satelitales de NASA y otras fuentes citadas</p>
+    </footer>
   );
 }
 

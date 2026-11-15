@@ -33,7 +33,7 @@ export function AuthPage() {
   }
 
   return (
-    <Page title="Qullqa">
+    <Page title="Qullqa" hideTitle>
       <p className="lead">Decidamos juntos qué sembrar, con datos de la NASA y lo que tú ves en tu chacra.</p>
       <InstallBanner />
       <div className="tabs">
