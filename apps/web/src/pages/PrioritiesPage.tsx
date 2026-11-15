@@ -56,7 +56,7 @@ export function PrioritiesPage() {
     setBusy(true);
     try {
       await api(`/communities/${cid}/preferences`, { method: 'PUT', json: { ...(manual ? { coins } : { focus }), constraints, vetoes } });
-      nav(`/c/${cid}`, { replace: true });
+      nav('/', { replace: true }); // el inicio muestra el siguiente paso
     } catch (e) {
       setError((e as Error).message);
     } finally {

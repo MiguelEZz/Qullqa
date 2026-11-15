@@ -379,3 +379,10 @@ footer.site p { margin: 6px 0; }
 .hero.hero-lg .wordmark.big { margin-top: 0; }
 .hero-title { margin-top: 8px; }
 @media (max-width: 480px) { .topbar:has(.tb-logo.on) .getapp-txt { display: none; } .topbar:has(.tb-logo.on) .getapp { padding: 0 11px; min-width: 44px; justify-content: center; } }
+/* Inicio guiado */
+.next-step h2 { font-size: 1.4rem; }
+.next-step > p { font-size: 1.05rem; margin: 0 0 6px; }
+.next-step .kicker { margin-bottom: 8px; }
+.todo-steps li.current .num { background: var(--brick); color: #fff; }
+.todo-steps li.current strong { color: var(--brick); }
+.todo-steps li.later { opacity: .55; }

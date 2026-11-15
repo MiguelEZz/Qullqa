@@ -31,9 +31,11 @@ export function CommunitySearch({ autoFocus = false }: { autoFocus?: boolean }) 
     setBusy(true);
     setError(null);
     try {
+      const firstCommunity = (me.communities ?? []).length === 0;
       await api(`/communities/${c.id}/join`, { method: 'POST' });
       await refresh();
-      nav(`/c/${c.id}`);
+      // La primera vez vuelve al inicio, que muestra el siguiente paso
+      nav(firstCommunity ? '/' : `/c/${c.id}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {

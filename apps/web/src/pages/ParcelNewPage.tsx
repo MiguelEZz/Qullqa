@@ -118,7 +118,8 @@ export function ParcelNewPage() {
       method: 'POST',
       json: { ...v, communityId: cid, ring: thin(ring), captureMethod: mode === 'corners' ? 'walk' : 'draw', gps: { altitudeM: altitude, accuracyM: meanAcc } },
     });
-    nav(`/c/${cid}/p/${p.id}`, { replace: true });
+    void p;
+    nav('/', { replace: true }); // el inicio muestra el siguiente paso
   }
 
   const c = community.data;
