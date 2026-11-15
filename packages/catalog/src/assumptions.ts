@@ -61,6 +61,9 @@ export interface Assumptions {
     maxFallowSeasons: number;
     /** Máximo de campañas seguidas con el mismo cultivo (contando la campaña en curso). */
     maxSameCropInRow: number;
+    /** Familias que comen de su chacra (autoconsumo o mixto): mínimo de campañas con tubérculo en las 3 (papa «cabeza de rotación»). */
+    minTuberSeasonsForHome: number;
+    tubers: string[];
   };
   sowing: {
     /** Lluvia acumulada en los últimos 10 días (mm) que abre la siembra en secano. */
@@ -123,6 +126,11 @@ export interface Assumptions {
     elasticity: number;
     /** Hectáreas de referencia del cultivo en el mercado local (Q0) por comunidad. */
     referenceHa: number;
+    /**
+     * Autoconsumo: lo que la familia come de su chacra vale lo que se ahorra en comprarlo (precio de tienda),
+     * no el precio en chacra. Se aplica a los alimentos básicos según el destino declarado (supuesto).
+     */
+    homeConsumption: { staples: string[]; priceFactor: Record<'autoconsumo' | 'mixto' | 'feria_local' | 'intermediario', number> };
   };
   /** Umbrales FIJOS de normalización 0–1 (spec §15.11): nunca min-max del conjunto. */
   normalization: {
@@ -193,7 +201,7 @@ export const ASSUMPTIONS: Assumptions = {
     secondCardShare: 0.75,
     adjust: { livestockSome: 0.5, livestockMany: 1, manyLivestock: 10, homeConsumptionSafety: 0.75, sellsIncome: 0.5, rainfedWater: 1 },
   },
-  rotation: { maxFallowSeasons: 1, maxSameCropInRow: 2 },
+  rotation: { maxFallowSeasons: 1, maxSameCropInRow: 2, minTuberSeasonsForHome: 1, tubers: ['papa', 'oca', 'olluco'] },
   sowing: { onsetRain10d_mm: 20, onsetFollow20d_mm: 10, minTmin_C: -2 },
   damage: { frostPerEvent: 0.15, heatPerEvent: 0.05, maxDamage: 0.95 },
   // Caudal de un turno: SUPUESTO (preguntar al comité de regantes / en la app). Eficiencia de riego por gravedad en andenes.
@@ -202,7 +210,12 @@ export const ASSUMPTIONS: Assumptions = {
     tillageFactor: { Solanaceae: 1.3, Basellaceae: 1.3, Oxalidaceae: 1.3, Fabaceae: 1, Amaranthaceae: 1, Poaceae: 1, ninguna: 0.5 } },
   erosion: { practiceP_terraces: 0.2, practiceP_slope: 1, terraceSlopeDeg: 4, terraceLength_m: 8, slopeLength_m: 30, terraceMaxSlopeDeg: 15, bareC: 0.5 },
   pests: { repeatFactor: 0.35, baseRisk: 0.1, neighborWeight: 0.5, percolationThreshold: 0.6 },
-  market: { elasticity: 1.5, referenceHa: 5 },
+  market: {
+    elasticity: 1.5,
+    referenceHa: 5,
+    // Precio de compra en tienda ≈ 1,6× el de chacra para alimentos básicos (supuesto; confirmar con la feria de Chivay)
+    homeConsumption: { staples: ['papa', 'oca', 'olluco', 'haba', 'maiz_amilaceo'], priceFactor: { autoconsumo: 1.6, mixto: 1.3, feria_local: 1, intermediario: 1 } },
+  },
   normalization: {
     deficit_mm_worst: 200, // spec §15.11
     erosion_tha_worst: 12, // spec §15.11 (tolerable FAO)

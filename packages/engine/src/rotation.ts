@@ -68,13 +68,15 @@ export function rotationStats(m: ParcelModel, rot: Rotation, prev0: string): Rot
   for (let k = 0; k < n; k++) {
     const y = years[k]!;
     let fail = false;
-    let d = 0, irr = 0, ero = 0, o = 0, f = 0;
+    let d = 0, dn = 0, irr = 0, ero = 0, o = 0, f = 0;
     for (let s = 0; s < 3; s++) {
       const prev = s === 0 ? prev0 : rot[s - 1]!;
       const r = season(m, rot[s]!, y + s, prev);
       const c = crops[s];
       yrel[k * 3 + s] = r.yrel;
-      d += r.deficit; irr += r.irrigation; ero += r.erosion_tha;
+      irr += r.irrigation; ero += r.erosion_tha;
+      // Déficit de agua solo de las campañas CON cultivo: un descanso no «ahorra» agua de una cosecha que no existe
+      if (c) { d += r.deficit; dn++; }
       for (let dec = 0; dec < 36; dec++) irrigationByDecade[dec]! += r.irrigationByDecade[dec]! / (3 * n);
       if (c) {
         revenue[k * 3 + s] = r.yrel * mid(c.yieldPotential_kgha) * mid(c.priceRange_soles_kg);
@@ -91,7 +93,7 @@ export function rotationStats(m: ParcelModel, rot: Rotation, prev0: string): Rot
       }
     }
     if (fail) failYears++;
-    deficit[k] = d / 3; irrigation[k] = irr / 3; erosion[k] = ero / 3; om[k] = o; forage[k] = f / 3;
+    deficit[k] = dn ? d / dn : a.normalization.deficit_mm_worst; irrigation[k] = irr / 3; erosion[k] = ero / 3; om[k] = o; forage[k] = f / 3;
   }
 
   // Crédito de N: lo que deja cada leguminosa al cultivo siguiente (incluye el que sigue a la rotación)

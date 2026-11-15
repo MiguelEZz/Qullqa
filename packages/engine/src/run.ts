@@ -29,6 +29,22 @@ export function makeSnapshot(input: EngineInput, valley: ValleyDataset, crops: C
   return structuredClone({ engineVersion: ENGINE_VERSION, input, valley, crops, assumptions, seed, ...(whatIf ? { whatIf } : {}) });
 }
 
+/**
+ * Autoconsumo: los alimentos básicos que la familia come valen lo que se ahorra en comprarlos (precio de tienda),
+ * según su destino declarado. Supuesto editable (assumptions.market.homeConsumption).
+ */
+function homeConsumptionCrops(crops: Record<string, CropCard>, market: string, a: Assumptions): Record<string, CropCard> {
+  const f = a.market.homeConsumption.priceFactor[market as keyof typeof a.market.homeConsumption.priceFactor] ?? 1;
+  if (f === 1) return crops;
+  const out = { ...crops };
+  for (const id of a.market.homeConsumption.staples) {
+    const c = out[id];
+    if (!c) continue;
+    out[id] = { ...c, priceRange_soles_kg: [c.priceRange_soles_kg[0] * f, c.priceRange_soles_kg[1] * f], source: `${c.source}; valorado como autoconsumo (×${f}, lo que cuesta comprarlo; supuesto)` };
+  }
+  return out;
+}
+
 /** Fusión simple (spec §5): la cosecha registrada corrige el rendimiento potencial, ponderando por precisión. */
 function fuseHarvests(m: ParcelModel, obs: EngineInput['participants'][number]['parcels'][number]['observations'], crops: Record<string, CropCard>): { crops: Record<string, CropCard>; notes: string[] } {
   const out = { ...crops };
@@ -114,10 +130,11 @@ export function runCommunity(snap: RunSnapshot): RunResult {
     if (!part.parcels.length) { warnings.push(`Un participante no tiene parcelas: queda fuera de la corrida.`); continue; }
     const models: ParcelModel[] = [];
     const notes: string[] = [];
+    const famCrops = homeConsumptionCrops(baseCrops, part.preferences.constraints.market, a);
     for (const p of part.parcels) {
       inputParcels.set(p.id, p);
-      let m = buildParcel(valley, p, part.userId, baseCrops, a, whatIf);
-      const fused = fuseHarvests(m, p.observations, baseCrops);
+      let m = buildParcel(valley, p, part.userId, famCrops, a, whatIf);
+      const fused = fuseHarvests(m, p.observations, famCrops);
       if (fused.notes.length) { m = buildParcel(valley, p, part.userId, fused.crops, a, whatIf); notes.push(...fused.notes); }
       models.push(m);
     }
@@ -133,7 +150,14 @@ export function runCommunity(snap: RunSnapshot): RunResult {
     for (const c of Object.values(m.crops)) apt.set(c.id, assessAptitude(m, c));
     aptByParcel.set(m.id, apt);
     const allowed = [FALLOW.id, ...[...apt.values()].filter((r) => r.aptitude !== 'notApt' && !pl.vetoes.includes(r.crop as never)).map((r) => r.crop)];
-    candidates.set(m.id, enumerateRotations(allowed, { ...a.rotation, fallowId: FALLOW.id }, m.currentRotation[2]));
+    let cands = enumerateRotations(allowed, { ...a.rotation, fallowId: FALLOW.id }, m.currentRotation[2]);
+    // Familias que comen de su chacra: al menos un tubérculo en las 3 campañas (papa «cabeza de rotación»), si alguno es apto
+    const eatsFromFarm = pl.constraints.market === 'autoconsumo' || pl.constraints.market === 'mixto';
+    if (eatsFromFarm && allowed.some((x) => a.rotation.tubers.includes(x))) {
+      const withTuber = cands.filter((r) => r.filter((x) => a.rotation.tubers.includes(x)).length >= a.rotation.minTuberSeasonsForHome);
+      if (withTuber.length) cands = withTuber;
+    }
+    candidates.set(m.id, cands);
   }
 
   const c = buildCommunity(players, candidates, a, whatIf.outbreakParcelId);

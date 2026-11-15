@@ -61,7 +61,9 @@ export function computeIndicators(s: RotationStats, ctx: ParcelContext, a: Assum
   const N = a.normalization;
   const D = s.dist;
   const inc = incomeDist(s, ctx.priceMult);
-  const pest = (ctx.pestRisk[0] + ctx.pestRisk[1] + ctx.pestRisk[2]) / 3;
+  // Plagas: promedio de las campañas con cultivo (el beneficio del descanso ya baja el riesgo del cultivo siguiente)
+  const cropped = [0, 1, 2].filter((t) => s.rotation[t] !== FALLOW.id);
+  const pest = cropped.length ? cropped.reduce((acc, t) => acc + ctx.pestRisk[t]!, 0) / cropped.length : 0;
   const nMid = (s.nCredit[0] + s.nCredit[1]) / 2;
   const mk = (id: IndicatorId, d: { mean: number; p10: number; p90: number }, robust: number, score: number, provenance: Provenance, range?: [number, number]): IndicatorValue =>
     ({ id, ...d, robust, score: clamp(score), unit: INDICATOR_UNITS[id], provenance, ...(range ? { range } : {}) });
