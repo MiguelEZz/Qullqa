@@ -5,7 +5,7 @@ import type { ValleyDataset } from '@qullqa/shared';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
   type RunResult, buildParcel, et0Hargreaves, et0PenmanMonteith, extraterrestrialRad, makeSnapshot, mannKendall, massBalanceError,
-  runCommunity, saxtonRawls, season,
+  privateView, runCommunity, saxtonRawls, season,
 } from '../src/index.ts';
 import { DEMO_INPUT } from './demoInput.ts';
 
@@ -108,6 +108,21 @@ describe('Corrida comunitaria', () => {
     const tr = r.participants.reduce((s, p) => s + p.shapley.transfer, 0);
     expect(Math.abs(phi - r.community.surplus_soles)).toBeLessThanOrEqual(r.participants.length); // redondeo a soles
     expect(Math.abs(tr)).toBeLessThanOrEqual(r.participants.length);
+  });
+
+  it('la vista privada de un agricultor no contiene datos de los demás', () => {
+    const me = DEMO_INPUT.participants[0]!;
+    const v = privateView(r, me.userId);
+    expect(v.me?.userId).toBe(me.userId);
+    const text = JSON.stringify(v);
+    for (const other of DEMO_INPUT.participants.slice(1)) {
+      expect(text).not.toContain(other.userId);
+      for (const p of other.parcels) expect(text).not.toContain(p.name);
+    }
+    expect(text).not.toContain('coins');
+    expect(v.community.plan.filter((p) => p.mine)).toHaveLength(me.parcels.length);
+    expect(v.community.transfers.receive + v.community.transfers.give + v.community.transfers.none).toBe(r.participants.length);
+    expect(privateView(r, 'nadie').me).toBeNull();
   });
 
   it('determinismo: misma entrada + misma semilla ⇒ salida idéntica', () => {

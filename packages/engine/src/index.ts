@@ -11,3 +11,4 @@ export * from './diagnosis.ts';
 export * from './enso.ts';
 export * from './explain.ts';
 export * from './run.ts';
+export * from './view.ts';

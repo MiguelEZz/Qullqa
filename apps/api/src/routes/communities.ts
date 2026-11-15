@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { CommunitySummary, CommunityView, LonLat, Readiness } from '@qullqa/shared';
 import { sql } from '../db.ts';
+import { enqueueRun } from './runs.ts';
 import { HttpError, requireMember, requireUser, uuidParam } from '../http.ts';
 
 /** Minúsculas y sin tildes, para buscar «Cabanaconde» escribiendo «cabana». */
@@ -135,6 +136,8 @@ export async function communityRoutes(app: FastifyInstance) {
     const r = await readinessFor(s.sub, id);
     if (!r.canSubmit) throw new HttpError(400, 'Falta registrar al menos una parcela y tus prioridades');
     await sql`update memberships set submitted_at = now() where user_id = ${s.sub} and community_id = ${id}`;
+    // Cada envío dispara (o actualiza) un cálculo del plan con todos los que ya enviaron
+    await enqueueRun(id, s.sub).catch((err) => req.log.error(err, 'no se pudo encolar el cálculo'));
     return readinessFor(s.sub, id);
   });
 }

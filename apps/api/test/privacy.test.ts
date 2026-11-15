@@ -45,8 +45,8 @@ beforeAll(async () => {
 
   // Comunidad de prueba del catálogo (las reales se siembran con seedCommunities)
   const [c] = await sql<{ id: string }[]>`
-    insert into communities (slug, name, district, province, region, listed, center)
-    values (${slug}, 'Test Yanque', 'Yanque', 'Caylloma', 'Arequipa', true, ST_SetSRID(ST_MakePoint(-71.635, -15.64), 4326)::geography)
+    insert into communities (slug, name, district, province, region, listed, valley_id, center)
+    values (${slug}, 'Test Yanque', 'Yanque', 'Caylloma', 'Arequipa', true, 'colca-chivay-yanque-coporaque', ST_SetSRID(ST_MakePoint(-71.635, -15.64), 4326)::geography)
     returning id`;
   communityId = c!.id;
   for (const u of [alice, bruno]) {
@@ -175,6 +175,22 @@ describe('datos listos para el cerebro', () => {
     const all = await buildEngineInput(communityId, { includeUnsubmitted: true });
     expect(all.participants).toHaveLength(2);
     expect(all.participants[0]!.parcels[0]!.neighborIds).toHaveLength(1);
+  });
+
+  it('enviar encola un cálculo; la entrada guardada es privada y el plan solo lo ven miembros', async () => {
+    const [run] = await sql<{ status: string; input: { participants: unknown[] } }[]>`select status, input from runs where community_id = ${communityId}`;
+    expect(run!.status).toBe('queued');
+    expect(run!.input.participants).toHaveLength(1);
+    const plan = await app.inject({ method: 'GET', url: `/api/communities/${communityId}/plan`, headers: bruno.headers });
+    expect(plan.statusCode).toBe(200);
+    expect(plan.json().pending.status).toBe('queued');
+    expect(plan.body).not.toContain('coins');
+    const other = await app.inject({ method: 'GET', url: `/api/communities/${communityId}/plan`, headers: carla.headers });
+    expect(other.statusCode).toBe(403);
+    // Un segundo pedido no crea otra corrida: actualiza la que está en cola
+    await app.inject({ method: 'POST', url: `/api/communities/${communityId}/runs`, headers: bruno.headers });
+    const [n] = await sql<{ n: number }[]>`select count(*)::int as n from runs where community_id = ${communityId}`;
+    expect(n!.n).toBe(1);
   });
 
   it('editar la parcela obliga a reenviar', async () => {

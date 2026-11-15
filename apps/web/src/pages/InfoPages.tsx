@@ -106,7 +106,7 @@ export function PrivacyPage() {
       <h2>Tus derechos</h2>
       <p>
         Puedes ver y corregir tus datos en la aplicación, salir de una comunidad o borrar tu cuenta desde «Mi cuenta» (se borra todo, de forma
-        definitiva). Los planes ya calculados conservan solo números, sin tu nombre ni tu teléfono. Para cualquier otra solicitud (acceso,
+        definitiva). Los planes ya calculados conservan la copia de los datos que se usaron en ese cálculo, sin tu nombre ni tu teléfono. Para cualquier otra solicitud (acceso,
         rectificación, cancelación u oposición) escríbenos a <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>
       <h2>Cookies</h2>
