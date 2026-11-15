@@ -29,6 +29,7 @@ export default defineConfig({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/api\//],
+        importScripts: ['push-sw.js'], // notificaciones del celular
       },
     }),
   ],

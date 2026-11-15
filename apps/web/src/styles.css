@@ -393,3 +393,7 @@ footer.site p { margin: 6px 0; }
 .obs-ico { width: 40px; height: 40px; border-radius: 12px; }
 .facts-big span { display: flex; align-items: center; gap: 6px; }
 .warn-mark { color: var(--bad); font-weight: 700; }
+/* Avisos */
+.bell { flex: none; position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, .18); color: #fff; }
+.bell-count { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: #fff; color: var(--brick); font-size: .75rem; font-weight: 700; display: grid; place-items: center; }
+.facts-big strong.date { font-size: 1.05rem; }

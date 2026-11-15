@@ -2,19 +2,21 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type { IndicatorValue, PlanView, StrategyCard } from '@qullqa/engine';
 import { INDICATORS, cropName, type IndicatorId, type Provenance } from '@qullqa/shared';
-import { api } from '../api.ts';
 import { useApi } from '../lib/hooks.ts';
-import { Card, ErrorMsg, Loading, Page } from '../components/ui.tsx';
+import { Card, ErrorMsg, LinkButton, Loading, Page } from '../components/ui.tsx';
+import { WaitingCard } from '../components/Waiting.tsx';
 import { Icon } from '../components/Icon.tsx';
 
 /** Respuesta de GET /api/communities/:id/plan (apps/api/src/routes/runs.ts). */
 export interface PlanResponse {
   hasValleyData: boolean;
   submittedCount: number;
+  memberCount: number;
   pending: { id: string; status: 'queued' | 'running'; createdAt: string } | null;
-  latest: { id: string; createdAt: string; finishedAt: string; durationMs: number; view: PlanView } | null;
+  latest: { id: string; kind: 'community' | 'incremental' | 'personal'; createdAt: string; finishedAt: string; durationMs: number; view: PlanView } | null;
+  /** Envió sus datos y espera a sus vecinos; personalPlanAt = cuándo llega su plan personal si nadie más envía. */
+  waiting: { since: string; personalPlanAt: string; othersSubmitted: number } | null;
   lastError: string | null;
-  stale: boolean;
 }
 
 type Sid = 'community' | 'individual' | 'current';
@@ -144,8 +146,6 @@ function StrategyView({ card, current, utilitySolo }: { card: StrategyCard; curr
 export function PlanPage() {
   const { cid = '' } = useParams();
   const plan = useApi<PlanResponse>(`/communities/${cid}/plan`);
-  const [error, setError] = useState<string | null>(null);
-  const [asking, setAsking] = useState(false);
   const d = plan.data;
 
   // Mientras el cerebro calcula, consultamos cada 2 s
@@ -155,47 +155,38 @@ export function PlanPage() {
     return () => clearInterval(t);
   }, [d?.pending, plan]);
 
-  async function recalc() {
-    setAsking(true);
-    setError(null);
-    try {
-      await api(`/communities/${cid}/runs`, { method: 'POST' });
-      await plan.reload();
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setAsking(false);
-    }
-  }
-
-  if (plan.error) return <Page title="Plan de siembra" back={`/c/${cid}`}><ErrorMsg error={plan.error} /></Page>;
-  if (!d) return <Page title="Plan de siembra" back={`/c/${cid}`}><Loading /></Page>;
+  if (plan.error) return <Page title="Plan de siembra" back="/"><ErrorMsg error={plan.error} /></Page>;
+  if (!d) return <Page title="Plan de siembra" back="/"><Loading /></Page>;
 
   const v = d.latest?.view;
 
   return (
-    <Page title="Plan de siembra" back={`/c/${cid}`}>
-      {!d.hasValleyData && <p className="notice">Todavía no tenemos los datos NASA de esta zona. El plan se calculará cuando el valle esté listo.</p>}
+    <Page title="Plan de siembra" back="/">
+      {!d.hasValleyData && <p className="notice">Todavía no tenemos los datos NASA de esta zona. Tu plan se calculará cuando el valle esté listo.</p>}
 
       {d.pending && (
         <div className="notice green status">
-          <span className="spinner" aria-hidden /> {d.pending.status === 'queued' ? 'En cola…' : 'Calculando el plan con los datos de tu comunidad…'}
+          <span className="spinner" aria-hidden /> Calculando tu plan con los datos de tu comunidad…
           <small>Simulamos cada rotación posible con 44 años de clima. Tarda unos segundos.</small>
         </div>
       )}
       {d.lastError && !d.pending && <p className="notice">{d.lastError}</p>}
+
+      {d.waiting && <WaitingCard personalPlanAt={d.waiting.personalPlanAt} othersSubmitted={d.waiting.othersSubmitted} memberCount={d.memberCount} cid={cid} />}
+
+      {!d.latest && !d.pending && !d.waiting && d.hasValleyData && (
+        <Card title="Todavía no tienes plan" icon="sprout">
+          <p>Tu plan se calcula solo cuando envías tus datos. Sigue los pasos del inicio.</p>
+          <LinkButton to="/" icon="home">IR AL INICIO</LinkButton>
+        </Card>
+      )}
+
       {d.latest && (
         <p className="lead small">
-          Calculado el {date(d.latest.finishedAt)} con {v!.participantsCount} {v!.participantsCount === 1 ? 'familia' : 'familias'}.
-          {d.stale && ' Hay datos nuevos desde entonces.'}
+          {d.latest.kind === 'personal'
+            ? `Plan personal del ${date(d.latest.finishedAt)}: nadie más de tu comunidad había enviado sus datos. Cuando lo hagan, calcularemos el plan juntos y te avisaremos.`
+            : `Calculado el ${date(d.latest.finishedAt)} con ${v!.participantsCount} ${v!.participantsCount === 1 ? 'familia' : 'familias'} de tu comunidad.`}
         </p>
-      )}
-      <ErrorMsg error={error} />
-      {d.hasValleyData && !d.pending && (d.stale || !d.latest) && (
-        <button onClick={recalc} disabled={asking}>{asking ? 'Pidiendo…' : d.latest ? 'Recalcular con los datos nuevos' : 'Calcular el plan'}</button>
-      )}
-      {!d.latest && !d.pending && d.hasValleyData && (
-        <p className="muted">Aún no hay un plan. Se calcula solo cuando alguien envía sus datos.</p>
       )}
 
       {v && <PlanResult view={v} />}

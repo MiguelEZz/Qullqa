@@ -14,6 +14,7 @@ import { PrioritiesPage } from './pages/PrioritiesPage.tsx';
 import { AccountPage } from './pages/AccountPage.tsx';
 import { PlanPage } from './pages/PlanPage.tsx';
 import { DownloadPage } from './pages/DownloadPage.tsx';
+import { NotificationsPage } from './pages/NotificationsPage.tsx';
 import { AdminPage } from './pages/AdminPage.tsx';
 import { AdminCommunityPage } from './pages/AdminCommunityPage.tsx';
 import { RecoverPage } from './pages/RecoverPage.tsx';
@@ -60,6 +61,7 @@ export function App() {
           <Route path="/app" element={<Navigate to="/descargar" replace />} />
           <Route path="/admin" element={<Private><AdminPage /></Private>} />
           <Route path="/admin/c/:id" element={<Private><AdminCommunityPage /></Private>} />
+          <Route path="/avisos" element={<Private><NotificationsPage /></Private>} />
           <Route path="/cuenta" element={<Private><AccountPage /></Private>} />
           <Route path="/comunidad/:slug" element={<CommunityLandingPage />} />
           <Route path="/unirse/*" element={<Navigate to="/comunidades" replace />} />

@@ -155,6 +155,7 @@ export function HowItWorksPage() {
 
 export function HelpPage() {
   const faq: [string, ReactNode][] = [
+    ['¿Cuándo recibo mi plan?', <>Cuando envías tus datos esperamos a que tus vecinos también los envíen, para calcular el plan juntos. Te avisamos apenas esté listo. Si en 3 días nadie más envía, te hacemos un plan solo para ti. Si tu comunidad ya tiene plan, el tuyo se calcula enseguida.</>],
     ['No encuentro mi comunidad', <>Busca por el nombre del pueblo o del distrito, sin preocuparte por las tildes. Si no está, escríbenos y la agregamos.</>],
     ['Olvidé mi PIN', <>Entra a <Link to="/recuperar">Recuperar mi PIN</Link> con tu número y tu código de recuperación.</>],
     ['¿Mis vecinos ven mis monedas?', <>No. Tus prioridades son privadas. Ellos solo ven el contorno de tus parcelas y el plan de la comunidad.</>],

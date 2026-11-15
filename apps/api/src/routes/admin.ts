@@ -148,7 +148,24 @@ export async function adminRoutes(app: FastifyInstance) {
       return { parcelId: cur.parcelId, family: fam.get(p.userId) ?? 0, current: pick(cur), plan: plan ? pick(plan) : null };
     })) : [];
 
+    // Historia de la comunidad: cada cálculo guarda una copia fija de los datos de ese momento
+    const runsHist = await sql<{ id: string; kind: string; finished_at: Date; input: { participants: { parcels: { id: string; areaHa: number; currentRotation: string[] }[] }[] }; plan: { parcelId: string; rotation: string[] }[] | null }[]>`
+      select id, kind, finished_at, input, result->'community'->'plan' as plan from runs
+      where community_id = ${id} and status = 'done' order by created_at desc limit 30`;
+    const history = runsHist.map((h) => {
+      const ps = h.input.participants.flatMap((p) => p.parcels);
+      const area = new Map(ps.map((p) => [p.id, p.areaHa]));
+      const sum = (pairs: [string, number][]) => pairs.reduce<Record<string, number>>((o, [k, v]) => ((o[k] = (o[k] ?? 0) + v), o), {});
+      return {
+        id: h.id, kind: h.kind, date: h.finished_at.toISOString(), families: h.input.participants.length, parcels: ps.length,
+        hectares: Math.round(ps.reduce((x, p) => x + p.areaHa, 0) * 100) / 100,
+        nowByCrop: sum(ps.map((p) => [p.currentRotation[2]!, p.areaHa])),
+        planByCrop: sum((h.plan ?? []).map((p) => [p.rotation[0]!, area.get(p.parcelId) ?? 0])),
+      };
+    });
+
     return {
+      history,
       funnel: await funnel(id),
       risk,
       confidence: r ? confidenceSummary([r]) : null,

@@ -15,6 +15,7 @@ import type { PlanView } from '@qullqa/engine';
 type Risk = { lossProb: number; deficitMm: number; erosionTha: number; incomeHa: number; pest: number };
 
 interface Detail {
+  history: { id: string; kind: 'community' | 'incremental' | 'personal'; date: string; families: number; parcels: number; hectares: number; nowByCrop: Record<string, number>; planByCrop: Record<string, number> }[];
   funnel: FunnelData;
   risk: { parcelId: string; family: number; current: Risk; plan: Risk | null }[];
   confidence: ConfidenceData | null;
@@ -357,6 +358,32 @@ export function AdminCommunityPage() {
             {dg.yearTypes.types.map((t) => <li key={t.name}><strong>{t.name}</strong>: {t.count} campañas (lluvia media {fmt(t.meanRain)} mm{t.elNino ? `, ${t.elNino} El Niño` : ''}) — {t.years.slice(-4).join(', ')}{t.years.length > 4 ? '…' : ''}</li>)}
           </ul>
           <p className="small muted">Altura de referencia {fmt(dg.elevationM)} m. Son estimaciones de reanálisis y satélite: confirmar tendencias con estaciones.</p>
+        </Card>
+      )}
+
+      {data.history.length > 0 && (
+        <Card title="Historia de la comunidad" icon="clock">
+          <p className="small muted">Cada cálculo guarda una copia fija de los datos de ese momento. Así se ve cómo cambia la comunidad con el tiempo.</p>
+          <table className="table">
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Familias</th><th>ha</th></tr></thead>
+            <tbody>
+              {data.history.map((h) => (
+                <tr key={h.id}>
+                  <td>{new Date(h.date).toLocaleDateString('es-PE', { dateStyle: 'medium' })}</td>
+                  <td>{h.kind === 'community' ? 'Comunidad' : h.kind === 'incremental' ? 'Se sumó alguien' : 'Personal'}</td>
+                  <td>{h.families}</td>
+                  <td>{fmt(h.hectares, 1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <h3>Qué sembraban y qué recomendó el plan en cada cálculo (ha)</h3>
+          <StackedRows rows={[...data.history].reverse().flatMap((h) => {
+            const d = new Date(h.date).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+            const parts = (m: Record<string, number>) => CROP_GROUPS.map((g) => ({ key: g.id, name: g.label, color: g.color, value: Object.entries(m).filter(([c]) => groupOf(c).id === g.id).reduce((x, [, v]) => x + v, 0) }));
+            return [{ label: `${d} · hoy`, parts: parts(h.nowByCrop) }, { label: `${d} · plan`, parts: parts(h.planByCrop) }];
+          })} />
+          <Legend items={CROP_GROUPS.map((g) => ({ label: g.label, color: g.color }))} />
         </Card>
       )}
 

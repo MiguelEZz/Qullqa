@@ -39,10 +39,14 @@ function PlanSummary({ cid, submitted }: { cid: string; submitted: boolean }) {
               </li>
             ))}
           </ul>
-          {d.stale && <p className="small muted">Hay datos nuevos de tus vecinos: puedes recalcular.</p>}
+          {d.latest?.kind === 'personal' && <p className="small muted">Es tu plan personal. Cuando tus vecinos envíen sus datos, calcularemos el plan de la comunidad y te avisaremos.</p>}
         </>
       ) : (
-        <p className="muted small">{submitted ? 'Tu plan aparecerá aquí cuando termine el cálculo.' : 'Envía tus datos para recibir tu plan: lo que siembras hoy, tu mejor plan solo y el plan con tus vecinos.'}</p>
+        <p className="muted small">
+          {d.waiting
+            ? `Esperando a tus vecinos: ${d.waiting.othersSubmitted} de ${Math.max(0, d.memberCount - 1)} enviaron. Te avisaremos cuando tu plan esté listo; si nadie envía, el ${new Date(d.waiting.personalPlanAt).toLocaleDateString('es-PE', { day: 'numeric', month: 'long' })} te haremos un plan personal.`
+            : submitted ? 'Tu plan aparecerá aquí cuando termine el cálculo. Te avisaremos.' : 'Envía tus datos para recibir tu plan: lo que siembras hoy, tu mejor plan solo y el plan con tus vecinos.'}
+        </p>
       )}
       {(d.latest || d.pending) && <LinkButton to={`/c/${cid}/plan`}>{me ? 'VER MI PLAN COMPLETO' : 'Ver el plan'}</LinkButton>}
     </Card>

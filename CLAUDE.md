@@ -89,6 +89,9 @@ App del agricultor (PWA) → datos listos para el cerebro:
 - Lluvia: POWER daba ~220 mm/año en el Colca; corregida por mes con GPM IMERG V07 (2001–2024) → ~400 mm/año. Factores ×1,1 (oct–nov) a ×2,5 (dic–may). `rainRaw` guarda la original.
 - Inicio de lluvias: 10 días con ≥ 20 mm desde el 1 de set (+ 10 mm en los 20 siguientes en el diagnóstico). Mediana ≈ 15 dic.
 - Motor: corrida comunitaria completa en ~3 s (6 parcelas). La racionalidad individual compara contra «todos hacen su mejor plan por separado».
+- **Cuándo se calcula el plan** (sin botón «pedir plan»): si es el único que envió → espera a sus vecinos; a las 72 h sin vecinos → plan personal (`schedulePersonalPlans`, API cada 10 min); si hay vecinos y no había plan → plan comunitario; si la comunidad ya tiene plan → plan «incremental» con los planes de los vecinos fijos (`fixedPlans` en el snapshot). Avisos en la app (`notifications`) y Web Push (VAPID en `.env`, `public/push-sw.js`).
+- Historia: cada corrida guarda una copia fija de los datos; el panel muestra la historia de cada comunidad.
+- Sin emojis en la UI: solo íconos SVG (`components/Icon.tsx`).
 - Conectado a la app: «Enviar mis datos» encola una corrida (tabla `runs`, migración 004); `apps/worker` la ejecuta (SKIP LOCKED + NOTIFY) y guarda resultado y snapshot; `GET /api/communities/:id/plan` devuelve `privateView` (su resultado + agregados, nunca datos de otros). Tarjetas en `/c/:cid/plan`.
 - Pendiente: vista proyector (mapa, heatmap, curva de cooperación, deslizadores, El Niño); tope de agua comunal; mercado autoconsumo; forraje según ganado.
 

@@ -7,6 +7,22 @@ import { useApi } from '../lib/hooks.ts';
 import { Card, ErrorMsg, InstallBanner, LinkButton, Loading, Page } from '../components/ui.tsx';
 import { Icon, type IconName } from '../components/Icon.tsx';
 import { CommunitySearch } from '../components/CommunitySearch.tsx';
+import { PushButton } from '../components/Waiting.tsx';
+
+/** Paso 5 mientras espera a sus vecinos: qué pasará y cuándo, y activar avisos. */
+function WaitingInline({ waiting, memberCount, cid }: { waiting: NonNullable<PlanResponse['waiting']>; memberCount: number; cid: string }) {
+  const when = new Date(waiting.personalPlanAt).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+  return (
+    <>
+      <p className="small">
+        {memberCount > 1
+          ? <><strong>{waiting.othersSubmitted} de {memberCount - 1}</strong> vecinos enviaron sus datos. Cuando lo hagan, calcularemos el plan de la comunidad y te avisaremos.</>
+          : <>Todavía ninguno de tus vecinos está en Qullqa. <Link to={`/c/${cid}`}>Invítalos</Link>: cuando envíen sus datos, calcularemos el plan juntos y te avisaremos.</>} Si nadie envía hasta el <strong>{when}</strong>, te haremos un plan personal.
+      </p>
+      <PushButton />
+    </>
+  );
+}
 import type { PlanResponse } from './PlanPage.tsx';
 
 type StepDef = { title: string; text: string; icon: IconName; done: boolean; action?: ReactNode };
@@ -67,8 +83,10 @@ export function HomePage() {
       action: <button onClick={() => void send()} disabled={sending}><Icon name="check" size={22} /> {sending ? 'ENVIANDO…' : 'ENVIAR MIS DATOS'}</button>,
     },
     {
-      title: 'Mira tu plan de siembra', icon: 'chart', done: hasPlan,
-      text: calculating ? 'Estamos calculando tu plan… tarda unos segundos. Puedes esperar aquí.' : plan.data && !plan.data.hasValleyData
+      title: plan.data?.waiting ? 'Tu plan está en camino' : 'Mira tu plan de siembra', icon: plan.data?.waiting ? 'clock' : 'chart', done: hasPlan,
+      text: calculating ? 'Estamos calculando tu plan… tarda unos segundos.' : plan.data?.waiting
+        ? ''
+        : plan.data && !plan.data.hasValleyData
         ? 'Todavía no tenemos los datos NASA de tu zona. Tu plan saldrá cuando estén listos.'
         : 'Qué te conviene sembrar, solo o con tus vecinos.',
       action: <LinkButton to={`/c/${cid}/plan`} icon="sprout">VER MI PLAN</LinkButton>,
@@ -88,8 +106,10 @@ export function HomePage() {
             <Card className="accent next-step">
               <p className="kicker">Paso {nextIdx + 1} de {steps.length} · Ahora haz esto</p>
               <h2><span className="ico-tile"><Icon name={next.icon} size={22} /></span>{next.title}</h2>
-              <p>{next.text}</p>
-              {nextIdx === 0 ? <CommunitySearch /> : nextIdx === 4 && (calculating || (plan.data && !plan.data.hasValleyData)) ? null : next.action}
+              {next.text && <p>{next.text}</p>}
+              {nextIdx === 0 ? <CommunitySearch />
+                : nextIdx === 4 && plan.data?.waiting ? <WaitingInline waiting={plan.data.waiting} memberCount={plan.data.memberCount} cid={cid} />
+                : nextIdx === 4 && (calculating || (plan.data && !plan.data.hasValleyData)) ? null : next.action}
               <ErrorMsg error={error} />
             </Card>
           ) : (

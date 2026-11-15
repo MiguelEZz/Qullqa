@@ -4,7 +4,7 @@
 #   ./infra/azure.sh setup    → (VM creada en el portal) solo instala Docker
 #   ./infra/azure.sh ip       → IP fija (para el registro A en Porkbun)
 #   ./infra/azure.sh deploy   → sube el último commit, genera .env de producción si no existe y levanta todo
-#   ./infra/azure.sh secrets  → copia SOLO las claves de datos (Earthdata, Planetary Computer, Meteomatics) y ADMIN_PHONES al .env de la VM
+#   ./infra/azure.sh secrets  → copia SOLO las claves de datos (Earthdata, Planetary Computer, Meteomatics) ADMIN_PHONES y claves VAPID al .env de la VM
 #   ./infra/azure.sh logs     → logs en vivo
 #   ./infra/azure.sh backup   → respaldo inmediato de la base → ./backups/ (además hay uno diario automático en la VM)
 #   ./infra/azure.sh warmup   → calienta la app antes de presentar
@@ -58,7 +58,7 @@ case "${1:-}" in
     ;;
   secrets)
     # Solo estas variables, leídas del .env local; nunca salen por la terminal.
-    keys='^(EARTHDATA_TOKEN|PC_SDK_SUBSCRIPTION_KEY|METEOMATICS_USERNAME|METEOMATICS_PASSWORD|ADMIN_PHONES)='
+    keys='^(EARTHDATA_TOKEN|PC_SDK_SUBSCRIPTION_KEY|METEOMATICS_USERNAME|METEOMATICS_PASSWORD|ADMIN_PHONES|VAPID_PUBLIC_KEY|VAPID_PRIVATE_KEY|VAPID_SUBJECT)='
     grep -E "$keys" .env | "${SSH[@]}" "$USER_VM@$(vm_ip)" "cd ~/qullqa && grep -vE '$keys' .env > .env.tmp; cat >> .env.tmp; mv .env.tmp .env; chmod 600 .env"
     ssh_vm "cd ~/qullqa && sudo docker compose -f infra/docker-compose.prod.yml --env-file .env up -d"
     echo "✓ Claves de datos copiadas y servicios reiniciados."

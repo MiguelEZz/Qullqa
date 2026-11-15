@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { DISCLAIMER } from '@qullqa/shared';
 import { useInstallPrompt } from '../lib/hooks.ts';
+import { useNotifications } from '../lib/notifications.ts';
 import { useSession } from '../lib/session.tsx';
 import { api } from '../api.ts';
 import { Icon, type IconName } from './Icon.tsx';
@@ -49,6 +50,7 @@ export function Page({
           </Link>
           <div className="tb-side right hero-actions">
             {actions}
+            {me && <Bell />}
             {!standalone && (
               <Link to="/descargar" className="getapp" aria-label="Descargar app"><Icon name="download" size={18} /><span className="getapp-txt"> Descargar app</span></Link>
             )}
@@ -85,6 +87,17 @@ export function Page({
       </main>
       {me && <BottomNav />}
     </div>
+  );
+}
+
+/** Campana de avisos con el número de no leídos. */
+function Bell() {
+  const { unread } = useNotifications(true);
+  return (
+    <Link to="/avisos" className="bell" aria-label={unread ? `Avisos: ${unread} sin leer` : 'Avisos'}>
+      <Icon name="bell" size={22} />
+      {unread > 0 && <span className="bell-count">{unread > 9 ? '9+' : unread}</span>}
+    </Link>
   );
 }
 
