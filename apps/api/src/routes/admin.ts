@@ -180,7 +180,7 @@ export async function adminRoutes(app: FastifyInstance) {
         erosion: count(obs.filter((o) => o.type === 'erosion').map((o) => String(o.value.level))),
         byMonth: count(obs.map((o) => o.observed_at.toISOString().slice(0, 7))),
       },
-      run: r ? {
+      run: r && run ? {
         id: run.id, finishedAt: run.finished_at.toISOString(), durationMs: run.duration_ms, participants: r.participants.length,
         feasible: r.community.feasible, surplus: r.community.surplus_soles, shapleyMethod: r.community.shapleyMethod,
         metrics: r.community.metrics, mutualBenefit: r.community.mutualBenefit, cooperationCurve: r.community.cooperationCurve,
