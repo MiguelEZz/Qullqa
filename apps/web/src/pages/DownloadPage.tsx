@@ -28,7 +28,7 @@ export function DownloadPage() {
         </Card>
       ) : canInstall ? (
         <Card className="accent">
-          <button onClick={() => void install().then(() => setDone(true))}>Instalar Qullqa</button>
+          <button onClick={() => void install().then((ok) => ok && setDone(true))}>Instalar Qullqa</button>
           <p className="small muted center">Te preguntará si quieres agregarla a tu pantalla de inicio.</p>
         </Card>
       ) : p.inApp ? (

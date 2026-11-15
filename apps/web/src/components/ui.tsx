@@ -111,7 +111,7 @@ export function InstallBanner() {
     <div className="install">
       <img src="/icon-192.png" alt="" width={40} height={40} />
       <span>Instala Qullqa en tu celular para abrirla como una app.</span>
-      {canInstall ? <button onClick={install}>Instalar</button> : <Link className="btn" to="/descargar">Ver cómo</Link>}
+      {canInstall ? <button onClick={() => void install()}>Instalar</button> : <Link className="btn" to="/descargar">Ver cómo</Link>}
     </div>
   );
 }

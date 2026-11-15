@@ -12,6 +12,15 @@
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Qullqa — Decidir juntos qué sembrar</title>
+    <script>
+      // Chrome avisa que la app se puede instalar (beforeinstallprompt) a veces antes de que cargue React:
+      // se guarda aquí para que el botón «Instalar» funcione con un solo toque.
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__qullqaInstall = e;
+        window.dispatchEvent(new Event('qullqa-installable'));
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

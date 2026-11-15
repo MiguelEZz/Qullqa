@@ -29,15 +29,17 @@ export function useApi<T>(path: string | null) {
 
 /** Guarda el evento de instalación aunque llegue antes de montar React. */
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
-let deferred: InstallEvent | null = null;
+const early = window as Window & { __qullqaInstall?: InstallEvent | null };
+let deferred: InstallEvent | null = early.__qullqaInstall ?? null;
 const listeners = new Set<() => void>();
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferred = e as InstallEvent;
+// index.html captura el evento lo antes posible; aquí solo lo recogemos
+window.addEventListener('qullqa-installable', () => {
+  deferred = early.__qullqaInstall ?? null;
   listeners.forEach((l) => l());
 });
 window.addEventListener('appinstalled', () => {
   deferred = null;
+  early.__qullqaInstall = null;
   listeners.forEach((l) => l());
 });
 
@@ -65,10 +67,14 @@ export function useInstallPrompt() {
     canInstall: !!deferred && !standalone,
     standalone,
     install: async () => {
-      if (!deferred) return;
-      await deferred.prompt();
+      if (!deferred) return false;
+      const ev = deferred;
       deferred = null;
+      early.__qullqaInstall = null;
+      await ev.prompt();
+      const choice = await ev.userChoice.catch(() => ({ outcome: 'dismissed' }));
       force((n) => n + 1);
+      return choice.outcome === 'accepted';
     },
   };
 }
