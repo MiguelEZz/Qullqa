@@ -58,7 +58,7 @@ main { position: relative; max-width: 600px; margin: 0 auto; padding: 0 16px 28p
 .wordmark.big { display: block; width: fit-content; margin: 10px auto 0; }
 .wordmark.big img { height: 80px; }
 .hero-title h1 { margin: 0; font-size: 1.55rem; color: #fff; }
-.hero.big { padding-bottom: 30px; }
+.hero.hero-lg { padding-bottom: 30px; }
 .hero-head { text-align: center; padding-top: 22px; margin-bottom: 18px; }
 .kicker { margin: 0; color: var(--brick); font-weight: 700; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; }
 .hero-head h1 { margin: 4px 0 0; font-size: 2rem; }
@@ -364,3 +364,18 @@ footer.site p { margin: 6px 0; }
 .mark-btn { min-height: 72px; font-size: 1.15rem; }
 .marking { min-height: 72px; font-size: 1.15rem; opacity: 1 !important; background: var(--brick-dark); }
 .marking .spinner { border-color: #fff; border-right-color: transparent; }
+
+/* ── Barra fija de arriba (logotipo siempre visible al hacer scroll) ── */
+.topbar { position: sticky; top: 0; z-index: 30; background: var(--brick); color: #fff; padding: calc(8px + env(safe-area-inset-top)) 16px 8px; transition: box-shadow .2s; }
+.topbar.scrolled { box-shadow: 0 6px 18px rgba(70, 20, 8, .25); }
+.topbar .hero-row { position: relative; max-width: 600px; margin: 0 auto; }
+.tb-side { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.tb-side.right { justify-content: flex-end; }
+.tb-logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.85); opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; }
+.tb-logo.on { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: auto; }
+.tb-logo img { height: 32px; }
+.hero { padding-top: 4px; }
+.hero.hero-lg { padding-top: 10px; }
+.hero.hero-lg .wordmark.big { margin-top: 0; }
+.hero-title { margin-top: 8px; }
+@media (max-width: 480px) { .topbar:has(.tb-logo.on) .getapp-txt { display: none; } .topbar:has(.tb-logo.on) .getapp { padding: 0 11px; min-width: 44px; justify-content: center; } }

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { DISCLAIMER } from '@qullqa/shared';
 import { useInstallPrompt } from '../lib/hooks.ts';
@@ -22,28 +22,42 @@ export function Page({
     document.title = title === 'Qullqa' ? 'Qullqa — Decidir juntos qué sembrar' : `${title} · Qullqa`;
   }, [title]);
 
-  const topRow = (
-    <div className="hero-row">
-      {back ? (
-        <button className="back" onClick={() => nav(back)}>
-          <Icon name="back" size={22} /> Volver
-        </button>
-      ) : <span />}
-      <div className="hero-actions">
-        {actions}
-        {!standalone && (
-          <Link to="/descargar" className="getapp"><Icon name="download" size={18} /> Descargar app</Link>
-        )}
-      </div>
-    </div>
-  );
+  // La barra de arriba queda fija al hacer scroll. En las páginas con logotipo grande, el pequeño aparece
+  // en la barra cuando el grande sale de la pantalla: «Qullqa» siempre visible.
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const on = () => setScrolled(window.scrollY > (variant === 'hero' ? 110 : 8));
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    return () => window.removeEventListener('scroll', on);
+  }, [variant]);
+  const showSmallLogo = variant !== 'hero' || scrolled;
 
   return (
     <div className={`app ${me ? 'with-nav' : ''}`}>
+      <div className={`topbar ${scrolled ? 'scrolled' : ''}`}>
+        <div className="hero-row">
+          <div className="tb-side">
+            {back && (
+              <button className="back" onClick={() => nav(back)}>
+                <Icon name="back" size={22} /> Volver
+              </button>
+            )}
+          </div>
+          <Link to="/" className={`wordmark tb-logo ${showSmallLogo ? 'on' : ''}`} aria-label="Qullqa, ir al inicio" tabIndex={showSmallLogo ? 0 : -1}>
+            <img src="/logo-qullqa-white.png" alt="Qullqa" width={71} height={32} />
+          </Link>
+          <div className="tb-side right hero-actions">
+            {actions}
+            {!standalone && (
+              <Link to="/descargar" className="getapp" aria-label="Descargar app"><Icon name="download" size={18} /><span className="getapp-txt"> Descargar app</span></Link>
+            )}
+          </div>
+        </div>
+      </div>
       {variant === 'hero' ? (
-        <header className="hero big">
+        <header className="hero hero-lg">
           <span className="hero-deco" aria-hidden />
-          {topRow}
           <Link to="/" className="wordmark big" aria-label="Qullqa, ir al inicio">
             <img src="/logo-qullqa-white-lg.png" alt="Qullqa" width={178} height={80} />
           </Link>
@@ -51,12 +65,8 @@ export function Page({
       ) : (
         <header className="hero">
           <span className="hero-deco" aria-hidden />
-          {topRow}
           {!hideTitle && (
             <div className="hero-title">
-              <Link to="/" className="wordmark" aria-label="Qullqa, ir al inicio">
-                <img src="/logo-qullqa-white.png" alt="Qullqa" width={62} height={28} />
-              </Link>
               <h1>{title}</h1>
             </div>
           )}
