@@ -1,4 +1,4 @@
-import { Card, LinkButton, Page } from '../components/ui.tsx';
+import { Card, InstallBanner, LinkButton, Page } from '../components/ui.tsx';
 
 /** Portada para quien aún no inició sesión. */
 export function LandingPage() {
@@ -14,6 +14,7 @@ export function LandingPage() {
         <LinkButton to="/ingresar">Crear mi cuenta gratis</LinkButton>
         <LinkButton to="/ingresar?modo=ingresar" variant="secondary">Ya tengo cuenta</LinkButton>
       </section>
+      <InstallBanner />
 
       <Card title="Cómo funciona">
         <ol className="steps">

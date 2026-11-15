@@ -227,3 +227,9 @@ footer.site p { margin: 6px 0; }
 .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid var(--green); border-right-color: transparent; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+/* ── Descargar app ────────────────────────────────────── */
+.getapp { display: inline-flex; align-items: center; min-height: 36px; padding: 0 12px; border-radius: 999px; background: var(--brick); color: var(--accent-fg); font-weight: 650; font-size: .85rem; text-decoration: none; white-space: nowrap; }
+.getapp:hover { background: var(--brick-dark); }
+.install img { border-radius: 10px; flex: none; }
+.install .btn { width: auto; margin: 0; min-height: 40px; background: var(--green); }

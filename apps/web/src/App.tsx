@@ -13,6 +13,7 @@ import { ObservationPage } from './pages/ObservationPage.tsx';
 import { PrioritiesPage } from './pages/PrioritiesPage.tsx';
 import { AccountPage } from './pages/AccountPage.tsx';
 import { PlanPage } from './pages/PlanPage.tsx';
+import { DownloadPage } from './pages/DownloadPage.tsx';
 import { RecoverPage } from './pages/RecoverPage.tsx';
 import { LandingPage } from './pages/LandingPage.tsx';
 import { NotFoundPage } from './pages/NotFoundPage.tsx';
@@ -53,6 +54,8 @@ export function App() {
           <Route path="/privacidad" element={<PrivacyPage />} />
           <Route path="/como-funciona" element={<HowItWorksPage />} />
           <Route path="/ayuda" element={<HelpPage />} />
+          <Route path="/descargar" element={<DownloadPage />} />
+          <Route path="/app" element={<Navigate to="/descargar" replace />} />
           <Route path="/cuenta" element={<Private><AccountPage /></Private>} />
           <Route path="/comunidad/:slug" element={<CommunityLandingPage />} />
           <Route path="/unirse/*" element={<Navigate to="/comunidades" replace />} />

@@ -5,6 +5,7 @@ import { useInstallPrompt } from '../lib/hooks.ts';
 
 export function Page({ title, back, children, actions, hideTitle }: { title: string; back?: string; children: ReactNode; actions?: ReactNode; hideTitle?: boolean }) {
   const nav = useNavigate();
+  const { standalone } = useInstallPrompt();
   useEffect(() => {
     document.title = title === 'Qullqa' ? 'Qullqa — Decidir juntos qué sembrar' : `${title} · Qullqa`;
   }, [title]);
@@ -19,7 +20,10 @@ export function Page({ title, back, children, actions, hideTitle }: { title: str
         <Link to="/" className="brand" aria-label="Qullqa, ir al inicio">
           <img src="/logo-qullqa.png" alt="Qullqa" width={84} height={38} />
         </Link>
-        {actions && <div className="actions">{actions}</div>}
+        <div className="actions">
+          {!standalone && <Link to="/descargar" className="getapp">Descargar app</Link>}
+          {actions}
+        </div>
       </header>
       {!hideTitle && <h1 className="pagetitle">{title}</h1>}
       {children}
@@ -36,6 +40,7 @@ export function SiteFooter() {
         <Link to="/terminos">Términos y condiciones</Link>
         <Link to="/privacidad">Privacidad</Link>
         <Link to="/ayuda">Ayuda</Link>
+        <Link to="/descargar">Descargar app</Link>
       </nav>
       <p>{DISCLAIMER}</p>
       <p>© 2026 Qullqa · Datos climáticos y satelitales de NASA y otras fuentes citadas</p>
@@ -100,12 +105,13 @@ export function LinkButton({ to, children, variant = 'primary' }: { to: string; 
 }
 
 export function InstallBanner() {
-  const { canInstall, install } = useInstallPrompt();
-  if (!canInstall) return null;
+  const { canInstall, install, standalone } = useInstallPrompt();
+  if (standalone) return null;
   return (
     <div className="install">
-      <span>Instala Qullqa en tu teléfono para abrirla como una app.</span>
-      <button onClick={install}>Instalar</button>
+      <img src="/icon-192.png" alt="" width={40} height={40} />
+      <span>Instala Qullqa en tu celular para abrirla como una app.</span>
+      {canInstall ? <button onClick={install}>Instalar</button> : <Link className="btn" to="/descargar">Ver cómo</Link>}
     </div>
   );
 }

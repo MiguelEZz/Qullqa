@@ -41,6 +41,18 @@ window.addEventListener('appinstalled', () => {
   listeners.forEach((l) => l());
 });
 
+/** Qué celular/navegador es, para dar las instrucciones correctas de instalación. */
+export function platform() {
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const android = /Android/i.test(ua);
+  // Navegadores dentro de otras apps: no permiten instalar
+  const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|TikTok|; wv\)/i.test(ua);
+  const iosSafari = ios && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua) && !inApp;
+  const samsung = /SamsungBrowser/i.test(ua);
+  return { ios, android, inApp, iosSafari, samsung, mobile: ios || android };
+}
+
 export function useInstallPrompt() {
   const [, force] = useState(0);
   useEffect(() => {
@@ -48,7 +60,7 @@ export function useInstallPrompt() {
     listeners.add(l);
     return () => void listeners.delete(l);
   }, []);
-  const standalone = window.matchMedia('(display-mode: standalone)').matches;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
   return {
     canInstall: !!deferred && !standalone,
     standalone,
