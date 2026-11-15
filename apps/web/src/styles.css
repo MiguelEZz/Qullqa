@@ -354,3 +354,13 @@ footer.site p { margin: 6px 0; }
 .big-choice { align-items: center; padding: 16px; }
 .big-choice .emoji, .tile .emoji { font-size: 1.8rem; line-height: 1; flex: none; }
 .tile .emoji { font-size: 1.5rem; }
+/* Marcar esquinas con GPS */
+.corner-status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0 6px; }
+.corner-status span { display: flex; flex-direction: column; align-items: center; padding: 10px 6px; border-radius: 16px; background: #fff; border: 1.5px solid var(--peach-line); font-size: .8rem; color: var(--muted); text-align: center; }
+.corner-status strong { font-size: 1.3rem; color: var(--fg); }
+.signal.buena strong { color: #3f5631; }
+.signal.regular strong { color: var(--warn); }
+.signal.débil strong { color: var(--bad); }
+.mark-btn { min-height: 72px; font-size: 1.15rem; }
+.marking { min-height: 72px; font-size: 1.15rem; opacity: 1 !important; background: var(--brick-dark); }
+.marking .spinner { border-color: #fff; border-right-color: transparent; }

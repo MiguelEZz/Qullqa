@@ -50,3 +50,35 @@ export function thin(ring: LonLat[], max = 300): LonLat[] {
 export function formatArea(m2: number): string {
   return m2 >= 10000 ? `${(m2 / 10000).toFixed(2)} ha` : `${Math.round(m2)} m²`;
 }
+
+export type Sample = { lon: number; lat: number; accuracy: number; altitude: number | null };
+
+/**
+ * Promedio ponderado de varias lecturas del GPS (peso 1/precisión²): en una esquina, quieto, 4–6 lecturas
+ * reducen mucho el error de una sola. Devuelve el punto y una precisión estimada.
+ */
+export function averageSamples(samples: Sample[]): { point: LonLat; accuracy: number; altitude: number | null } | null {
+  if (!samples.length) return null;
+  const best = Math.min(...samples.map((s) => s.accuracy));
+  // Descarta lecturas mucho peores que la mejor (saltos del GPS)
+  const use = samples.filter((s) => s.accuracy <= Math.max(best * 2, best + 5));
+  let wx = 0, wy = 0, w = 0, wa = 0, alt = 0, nAlt = 0;
+  for (const s of use) {
+    const k = 1 / Math.max(1, s.accuracy) ** 2;
+    wx += s.lon * k; wy += s.lat * k; w += k; wa += k * s.accuracy;
+    if (s.altitude != null) { alt += s.altitude; nAlt++; }
+  }
+  const acc = wa / w / Math.sqrt(use.length);
+  return { point: [wx / w, wy / w], accuracy: Math.max(1, acc), altitude: nAlt ? alt / nAlt : null };
+}
+
+/** Mantiene la pantalla encendida (si el navegador lo permite): con la pantalla apagada el GPS se detiene. */
+export async function keepAwake(): Promise<() => void> {
+  try {
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } };
+    const lock = await nav.wakeLock?.request('screen');
+    return () => void lock?.release().catch(() => {});
+  } catch {
+    return () => {};
+  }
+}
