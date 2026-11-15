@@ -15,6 +15,10 @@
     <script>
       // Chrome avisa que la app se puede instalar (beforeinstallprompt) a veces antes de que cargue React:
       // se guarda aquí para que el botón «Instalar» funcione con un solo toque.
+      // Abierto desde WhatsApp/Facebook (Custom Tab de Android): ahí no se puede instalar
+      try {
+        if (document.referrer.indexOf('android-app://') === 0) sessionStorage.setItem('qullqa-from-app', document.referrer.slice(14));
+      } catch (e) {}
       window.addEventListener('beforeinstallprompt', function (e) {
         e.preventDefault();
         window.__qullqaInstall = e;

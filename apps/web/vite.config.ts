@@ -13,7 +13,11 @@ export default defineConfig({
         short_name: 'Qullqa',
         description: 'Decidir juntos qué sembrar, con datos NASA y observaciones de campo.',
         lang: 'es-PE',
+        id: '/',
         start_url: '/',
+        // Permite a la página saber si ya está instalada (navigator.getInstalledRelatedApps)
+        related_applications: [{ platform: 'webapp', url: 'https://qullqa.us/manifest.webmanifest' }],
+        prefer_related_applications: false,
         display: 'standalone',
         background_color: '#f2eee6',
         theme_color: '#b64a31',

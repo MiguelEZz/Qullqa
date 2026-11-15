@@ -48,24 +48,50 @@ export function platform() {
   const ua = navigator.userAgent;
   const ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const android = /Android/i.test(ua);
-  // Navegadores dentro de otras apps: no permiten instalar
-  const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|TikTok|; wv\)/i.test(ua);
+  // Abierto desde otra app (WhatsApp, Facebook…): en Android suele ser una «Custom Tab» de Chrome con el mismo
+  // userAgent, pero el referrer es android-app://<paquete>. Ahí no se puede instalar. index.html lo recuerda.
+  let fromApp: string | null = null;
+  try { fromApp = sessionStorage.getItem('qullqa-from-app'); } catch { /* sin almacenamiento */ }
+  const inApp = /FBAN|FBAV|Instagram|WhatsApp|Line\/|TikTok|; wv\)/i.test(ua) || !!fromApp;
   const iosSafari = ios && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua) && !inApp;
   const samsung = /SamsungBrowser/i.test(ua);
-  return { ios, android, inApp, iosSafari, samsung, mobile: ios || android };
+  const miui = /MiuiBrowser|XiaoMi/i.test(ua);
+  const huawei = /HuaweiBrowser/i.test(ua);
+  const firefox = /Firefox|FxiOS/i.test(ua);
+  const opera = /OPR\/|Opera/i.test(ua);
+  const brave = !!(navigator as { brave?: unknown }).brave;
+  const chrome = android && /Chrome\//.test(ua) && !samsung && !miui && !huawei && !opera && !brave && !/EdgA/.test(ua);
+  const appName = fromApp?.includes('whatsapp') ? 'WhatsApp' : fromApp?.includes('facebook') ? 'Facebook' : fromApp ? 'otra app' : null;
+  return { ios, android, inApp, appName, iosSafari, samsung, miui, huawei, firefox, opera, brave, chrome, mobile: ios || android };
+}
+
+/** ¿Ya está instalada? (Chrome Android, vía related_applications del manifiesto). */
+let installedCache: boolean | null = null;
+async function checkInstalled(): Promise<boolean> {
+  if (installedCache !== null) return installedCache;
+  const nav = navigator as { getInstalledRelatedApps?: () => Promise<unknown[]> };
+  try { installedCache = nav.getInstalledRelatedApps ? (await nav.getInstalledRelatedApps()).length > 0 : false; } catch { installedCache = false; }
+  return installedCache;
 }
 
 export function useInstallPrompt() {
   const [, force] = useState(0);
+  const [installed, setInstalled] = useState(installedCache ?? false);
+  // Chrome a veces avisa que se puede instalar unos segundos después de cargar: esperamos antes de mostrar pasos manuales
+  const [waited, setWaited] = useState(performance.now() > 4000);
   useEffect(() => {
     const l = () => force((n) => n + 1);
     listeners.add(l);
-    return () => void listeners.delete(l);
+    void checkInstalled().then(setInstalled);
+    const t = setTimeout(() => setWaited(true), Math.max(0, 4000 - performance.now()));
+    return () => { listeners.delete(l); clearTimeout(t); };
   }, []);
   const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
   return {
     canInstall: !!deferred && !standalone,
     standalone,
+    installed,
+    waited: waited || !!deferred,
     install: async () => {
       if (!deferred) return false;
       const ev = deferred;
