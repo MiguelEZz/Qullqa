@@ -152,4 +152,8 @@ What matters to each family, its resources and its vetoes are **private**: the A
 - More valleys; 30 m vegetation (Landsat / HLS), soil moisture (SMAP), climate scenarios (NEX-GDDP-CMIP6).
 - Quechua audio and Play Store distribution.
 
+## License
+
+[MIT](LICENSE)
+
 > *This tool supports decisions; it does not replace the farmer's experience or an agronomist's advice.*
