@@ -1,5 +1,5 @@
--- Las comunidades ya no se crean ni usan códigos: vienen de un catálogo (src/communityCatalog.ts)
--- y las forman quienes se unen. Las comunidades creadas antes quedan sin listar (solo sus miembros las ven).
+-- Comunidades de catálogo (src/communityCatalog.ts): no se crean ni usan códigos;
+-- las forman quienes se unen. Las comunidades creadas antes quedan sin listar (solo sus miembros las ven).
 alter table communities alter column join_code drop not null;
 alter table communities alter column created_by drop not null;
 alter table communities

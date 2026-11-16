@@ -116,11 +116,9 @@ export function rotationStats(m: ParcelModel, rot: Rotation, prev0: string): Rot
   };
 }
 
-/** Todas las rotaciones de 3 campañas con los cultivos permitidos. */
 /**
  * Rotaciones candidatas de 3 campañas. Aplica reglas de rotación (supuesto editable): pocas campañas de descanso
  * y no repetir el mismo cultivo más de N campañas seguidas, contando la campaña en curso (`prev`).
- * Sin reglas, el optimizador proponía p. ej. avena 3 años seguidos o 3 años de descanso.
  */
 export function enumerateRotations(allowed: string[], rules?: { maxFallowSeasons: number; maxSameCropInRow: number; fallowId: string }, prev?: string | null): Rotation[] {
   const out: Rotation[] = [];

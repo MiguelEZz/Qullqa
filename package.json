@@ -16,5 +16,10 @@
     "@types/node": "^26.6.6",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
+  },
+  "description": "Qullqa: a community digital twin to decide what to plant (NASA Space Apps Challenge 2026)",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
   }
 }

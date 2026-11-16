@@ -6,7 +6,7 @@ Qullqa es un gemelo digital comunitario para agricultores andinos (piloto: valle
 
 **Piloto: corredor agrícola Chivay–Yanque–Coporaque** (andenes del valle del Colca, provincia de Caylloma). Centro de trabajo: −15.640, −71.635 (~3 520 m SRTM). Rango de parcelas: ~3 400–3 900 m. Confirmar la máscara de cultivo con ESA WorldCover (clase 40 = cropland) antes de fijar parcelas demo. Valores de cultivos: INIA/fuentes peruanas prevalecen sobre FAO cuando difieren. Ayuda a una comunidad a decidir **qué plantar, cuándo y coordinado con sus vecinos**, usando datos NASA + observaciones de campo tomadas con el celular.
 
-- Especificación del motor (fuente de verdad científica): `Qullqa — Motor de decisión especificación completa para Claude CodeFinal.pdf`. **Las correcciones de la sección 15 prevalecen sobre las secciones 1–14.**
+- Especificación del motor (fuente de verdad científica): `docs/especificacion-motor.pdf`. **Las correcciones de la sección 15 prevalecen sobre las secciones 1–14.**
 - Arquitectura del sistema: `docs/ARCHITECTURE.md`.
 - Lo que no está en la especificación no se construye todavía.
 
