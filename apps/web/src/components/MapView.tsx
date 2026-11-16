@@ -102,7 +102,6 @@ export function MapView({ center, parcels = [], draft, me, onMapClick, onParcelC
       ready.current = false;
       m.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function sync() {
@@ -128,7 +127,6 @@ export function MapView({ center, parcels = [], draft, me, onMapClick, onParcelC
     };
     if (ready.current) doFit();
     else m.once('load', doFit);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey]);
 
   return <div ref={el} className="map" style={{ height }} />;

@@ -43,7 +43,6 @@ export function ParcelNewPage() {
       .then((f) => { setMe([f.lon, f.lat]); setAccuracy(f.accuracy); setAltitude(f.altitude); setFit([[f.lon, f.lat]]); })
       .catch(() => {});
     return () => stopGps();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** GPS siempre encendido mientras marca esquinas: así cada esquina se toma con el GPS ya «despierto». */

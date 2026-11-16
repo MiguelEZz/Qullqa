@@ -6,6 +6,9 @@ if (!url) throw new Error('DATABASE_URL no está definida (revisa .env)');
 
 export const sql = postgres(url, { max: 10, onnotice: () => {} });
 
+/** Valor para una columna JSONB (o un parámetro jsonb) a partir de cualquier objeto serializable. */
+export const json = (value: unknown) => sql.json(value as postgres.JSONValue);
+
 /** Aplica en orden los .sql de /migrations que aún no se aplicaron. */
 export async function migrate(): Promise<string[]> {
   await sql`create table if not exists schema_migrations (name text primary key, applied_at timestamptz not null default now())`;

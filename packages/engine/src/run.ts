@@ -154,7 +154,7 @@ export function runCommunity(snap: RunSnapshot): RunResult {
     const apt = new Map<string, AptitudeResult>();
     for (const c of Object.values(m.crops)) apt.set(c.id, assessAptitude(m, c));
     aptByParcel.set(m.id, apt);
-    const allowed = [FALLOW.id, ...[...apt.values()].filter((r) => r.aptitude !== 'notApt' && !pl.vetoes.includes(r.crop as never)).map((r) => r.crop)];
+    const allowed = [FALLOW.id, ...[...apt.values()].filter((r) => r.aptitude !== 'notApt' && !(pl.vetoes as string[]).includes(r.crop)).map((r) => r.crop)];
     const fixed = snap.fixedPlans?.[m.id];
     if (fixed) { candidates.set(m.id, [fixed]); continue; } // plan ya acordado de un vecino: no se toca
     let cands = enumerateRotations(allowed, { ...a.rotation, fallowId: FALLOW.id }, m.currentRotation[2]);

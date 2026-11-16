@@ -162,6 +162,5 @@ describe('Corrida comunitaria', () => {
     for (const p of res.participants) expect(p.utilityCommunity).toBeGreaterThanOrEqual(p.utilitySolo - 1e-9);
     expect(res.community.surplus_soles).toBeGreaterThanOrEqual(-1);
     expect(m.community.meanPestRisk).toBeLessThanOrEqual(m.allSolo.meanPestRisk + 0.05);
-    console.log('[densa]', res.community.mutualBenefit.join(' | '), res.participants.map((p) => p.shapley));
   });
 });

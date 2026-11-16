@@ -162,14 +162,6 @@ input.code { text-transform: uppercase; letter-spacing: .25em; font-size: 1.4rem
 .navlist small { display: block; color: var(--muted); font-weight: 400; font-size: .9rem; }
 .navlist a > .icon:last-child { color: var(--brick); }
 
-.checklist { list-style: none; padding: 0; margin: 0 0 6px; }
-.checklist li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; font-size: 1.02rem; }
-.checklist .mark { display: grid; place-items: center; flex: none; width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 2px solid var(--peach-line); font-weight: 700; color: var(--muted); }
-.checklist .done .mark { background: var(--green); border-color: var(--green); color: #fff; }
-.checklist .done a { color: var(--green); }
-.checklist .todo .mark { border-color: var(--brick); color: var(--brick); }
-.checklist .todo a, .checklist a { color: var(--brick); }
-.checklist .optional { color: var(--muted); }
 
 .stats { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 14px; color: var(--muted); font-size: .9rem; }
 .stats strong { display: block; font-size: 1.7rem; color: var(--fg); }
@@ -228,8 +220,6 @@ input.code { text-transform: uppercase; letter-spacing: .25em; font-size: 1.4rem
 .error { display: flex; gap: 8px; align-items: flex-start; padding: 12px 14px; border-radius: 16px; background: var(--bad-soft); color: var(--bad); font-weight: 700; }
 .success { color: #3f5631; font-weight: 700; }
 .loading { display: flex; align-items: center; gap: 10px; color: var(--muted); margin: 24px 0; }
-.divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .9rem; margin: 16px 0 4px; }
-.divider::before, .divider::after { content: ''; flex: 1; height: 1.5px; background: var(--peach-line); }
 .below { text-align: center; margin: 18px 0 4px; }
 .below p { margin: 10px 0; }
 
@@ -352,8 +342,6 @@ footer.site p { margin: 6px 0; }
 .facts-big strong { font-size: 1.35rem; }
 .facts-big small { font-size: .85rem; color: var(--muted); }
 .big-choice { align-items: center; padding: 16px; }
-.big-choice .emoji, .tile .emoji { font-size: 1.8rem; line-height: 1; flex: none; }
-.tile .emoji { font-size: 1.5rem; }
 /* Marcar esquinas con GPS */
 .corner-status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0 6px; }
 .corner-status span { display: flex; flex-direction: column; align-items: center; padding: 10px 6px; border-radius: 16px; background: #fff; border: 1.5px solid var(--peach-line); font-size: .8rem; color: var(--muted); text-align: center; }

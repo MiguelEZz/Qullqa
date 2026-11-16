@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
-import type { Constraints, FocusId, ObservationValue } from '@qullqa/shared';
+import type { Constraints, CropId, FocusId, ObservationValue } from '@qullqa/shared';
 import { ASSUMPTIONS, coinsFromFocus } from '@qullqa/catalog';
 import { sql } from '../db.ts';
 import { hashPin } from '../security.ts';
@@ -67,9 +67,9 @@ function observationsFor(field: Field, k: number, rot: Rot, f: number): { value:
   if (rot[2] !== 'descanso' && (f + k) % 2 === 0) {
     const tha: Record<string, number> = { papa: 11, haba: 2.2, cebada: 2.4, maiz_amilaceo: 2.6, quinua: 1.6, oca: 7, olluco: 6, avena_forrajera: 9 };
     const kgHa = (tha[rot[2]] ?? 3) * 1000 * (0.85 + ((f * 7 + k * 3) % 10) / 33);
-    out.push({ value: { type: 'harvest', crop: rot[2] as never, kg: Math.round(kgHa * 0.3), areaM2: 3000, harvestDate: '2026-05-20' }, daysAgo: 178 });
+    out.push({ value: { type: 'harvest', crop: rot[2] as CropId, kg: Math.round(kgHa * 0.3), areaM2: 3000, harvestDate: '2026-05-20' }, daysAgo: 178 });
   }
-  if (LOW_ROW.has(field.key)) out.push({ value: { type: 'frost', severity: 'leve', minTempC: -2.5, damagedCrop: rot[2] === 'descanso' ? null : (rot[2] as never) }, daysAgo: 230 + k });
+  if (LOW_ROW.has(field.key)) out.push({ value: { type: 'frost', severity: 'leve', minTempC: -2.5, damagedCrop: rot[2] === 'descanso' ? null : (rot[2] as CropId) }, daysAgo: 230 + k });
   if (k === 0) out.push({ value: { type: 'green_cover', fraction: 0.15 + (f % 4) * 0.05, otsuThreshold: 21, method: 'ExG+Otsu' }, daysAgo: 6 });
   return out;
 }
@@ -112,7 +112,7 @@ export async function seedDemoCommunity(now = new Date()): Promise<string> {
         for (const o of observationsFor(field, k, rot, f)) {
           const at = new Date(now.getTime() - o.daysAgo * 86_400_000);
           await tx`insert into observations (parcel_id, user_id, type, value, lat, lon, observed_at)
-                   values (${p!.id}, ${uid}, ${o.value.type}, ${tx.json(o.value as never)}, ${c1}, ${c0}, ${at})`;
+                   values (${p!.id}, ${uid}, ${o.value.type}, ${tx.json(o.value)}, ${c1}, ${c0}, ${at})`;
         }
       }
 

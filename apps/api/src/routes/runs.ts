@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { privateView, type PlanView, type RunResult } from '@qullqa/engine';
 import type { EngineInput } from '@qullqa/shared';
-import { sql } from '../db.ts';
+import { json, sql } from '../db.ts';
 import { buildEngineInput } from '../engineInput.ts';
 import { requireMember, requireUser, uuidParam } from '../http.ts';
 
@@ -29,8 +29,8 @@ async function insertRun(communityId: string, valleyId: string, input: EngineInp
   const seed = Math.floor(Math.random() * 2 ** 31); // queda guardada: la corrida es reproducible
   const [run] = await sql<{ id: string }[]>`
     insert into runs (community_id, requested_by, valley_id, seed, input, kind, target_user, fixed_plans)
-    values (${communityId}, ${o.requestedBy}, ${valleyId}, ${seed}, ${sql.json(input as never)}, ${o.kind}, ${o.target ?? null},
-            ${o.fixedPlans ? sql.json(o.fixedPlans as never) : null}) returning id`;
+    values (${communityId}, ${o.requestedBy}, ${valleyId}, ${seed}, ${json(input)}, ${o.kind}, ${o.target ?? null},
+            ${o.fixedPlans ? json(o.fixedPlans) : null}) returning id`;
   await sql`select pg_notify('qullqa_runs', ${communityId})`;
   return run!;
 }
@@ -45,7 +45,7 @@ export async function enqueueRun(communityId: string, requestedBy: string | null
   const input = await buildEngineInput(communityId);
   if (!ready(input).length) return null;
   const [queued] = await sql<{ id: string }[]>`
-    update runs set input = ${sql.json(input as never)}, requested_by = ${requestedBy}, kind = 'community', target_user = null, fixed_plans = null
+    update runs set input = ${json(input)}, requested_by = ${requestedBy}, kind = 'community', target_user = null, fixed_plans = null
     where community_id = ${communityId} and status = 'queued' returning id`;
   if (queued) return queued;
   return insertRun(communityId, c.valley_id, input, { kind: 'community', requestedBy });
@@ -106,7 +106,7 @@ export async function runRoutes(app: FastifyInstance) {
     const s = await requireUser(req);
     const id = uuidParam(req.params.id);
     await requireMember(s.sub, id);
-    const me = sql.json([{ userId: s.sub }] as never); // «el cálculo incluye a este agricultor»
+    const me = json([{ userId: s.sub }]);
     const [c] = await sql<{ valley_id: string | null; submitted: number; members: number; my_submit: Date | null; my_last_plan: Date | null }[]>`
       select valley_id,
         (select count(*)::int from memberships where community_id = c.id and submitted_at is not null) as submitted,

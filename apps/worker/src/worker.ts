@@ -13,6 +13,7 @@ import { loadValley } from './valleys.ts';
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error('DATABASE_URL no está definida (revisa .env)');
 const sql = postgres(url, { max: 3, onnotice: () => {} });
+const json = (value: unknown) => sql.json(value as postgres.JSONValue);
 const log = (msg: string, extra: Record<string, unknown> = {}) => console.log(JSON.stringify({ t: new Date().toISOString(), msg, ...extra }));
 
 // Notificaciones del celular (Web Push): solo si hay claves VAPID en el entorno
@@ -56,7 +57,7 @@ async function runJob(job: Job) {
     // Snapshot: la entrada ya está en runs.input; aquí guardamos versiones, catálogo, supuestos y planes fijos usados.
     const meta = { engineVersion: ENGINE_VERSION, valleyId: valley.id, valleyVersion: valley.version, seed: job.seed, kind: job.kind, crops: snap.crops, assumptions: snap.assumptions, fixedPlans: job.fixed_plans };
     await sql`
-      update runs set status = 'done', result = ${sql.json(result as never)}, snapshot_meta = ${sql.json(meta as never)},
+      update runs set status = 'done', result = ${json(result)}, snapshot_meta = ${json(meta)},
         duration_ms = ${ms}, finished_at = now()
       where id = ${job.id}`;
 

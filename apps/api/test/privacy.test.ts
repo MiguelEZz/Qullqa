@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.ts';
-import { migrate, sql } from '../src/db.ts';
+import { json, migrate, sql } from '../src/db.ts';
 import { buildEngineInput } from '../src/engineInput.ts';
 import { schedulePersonalPlans } from '../src/routes/runs.ts';
 
@@ -212,7 +212,7 @@ describe('datos listos para el cerebro', () => {
       { parcelId: parcelA, ownerId: alice.id, rotation: ['quinua', 'haba', 'papa'], rotationText: '' },
     ];
     await sql`insert into runs (community_id, valley_id, seed, input, status, kind, result, finished_at)
-              values (${communityId}, 'colca-chivay-yanque-coporaque', 1, '{"participants":[]}', 'done', 'community', ${sql.json({ community: { plan } } as never)}, now())`;
+              values (${communityId}, 'colca-chivay-yanque-coporaque', 1, '{"participants":[]}', 'done', 'community', ${json({ community: { plan } })}, now())`;
     await app.inject({ method: 'POST', url: `/api/communities/${communityId}/join`, headers: carla.headers });
     const ringC: [number, number][] = [[-71.6344, -15.6402], [-71.6341, -15.6402], [-71.6341, -15.6399], [-71.6344, -15.6399]];
     const pc = await app.inject({ method: 'POST', url: '/api/parcels', headers: carla.headers, payload: { communityId, captureMethod: 'draw', irrigation, currentRotation: ['papa', 'haba', 'cebada'], name: 'Chacra de Carla', ring: ringC } });
