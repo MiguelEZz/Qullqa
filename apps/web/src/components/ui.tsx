@@ -237,12 +237,3 @@ export function InstallBanner() {
     </div>
   );
 }
-
-export function Check({ ok, children, optional }: { ok: boolean; children: ReactNode; optional?: boolean }) {
-  return (
-    <li className={ok ? 'done' : optional ? 'optional' : 'todo'}>
-      <span className="mark" aria-hidden>{ok ? <Icon name="check" size={18} /> : optional ? '○' : '•'}</span>
-      <span>{children}</span>
-    </li>
-  );
-}

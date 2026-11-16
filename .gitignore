@@ -12,3 +12,6 @@ apps/api/out/
 
 # Respaldos de la base descargados con ./infra/azure.sh backup
 backups/
+
+# Salidas locales
+*.dump
